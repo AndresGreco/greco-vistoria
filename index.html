@@ -7,6 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;800&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<!-- Firebase SDKs (somente Firestore, sem Storage) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 /* ══════════════════════════════════════════════
    GRECO ARQUITETURA — VISTORIA APP
@@ -529,6 +532,62 @@ body:not(.edit-mode) .sec-text[contenteditable] { pointer-events: none; }
 .auth-cancel { color: var(--muted); font-size: 12px; margin-top: 16px; cursor: pointer; text-decoration: underline; display: block; }
 
 /* ══════════════════════════════════════════════
+   TOAST / NOTIFICAÇÕES
+══════════════════════════════════════════════ */
+#toast {
+  position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--surface2); border: 1px solid var(--line2); color: var(--ink);
+  font-family: var(--title); font-size: 13px; font-weight: 700; letter-spacing: 1px;
+  padding: 12px 24px; border-radius: 30px; z-index: 999;
+  opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none;
+  white-space: nowrap; box-shadow: 0 8px 30px rgba(0,0,0,.5);
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.ok   { border-color: var(--accent); color: var(--accent); }
+#toast.err  { border-color: var(--critico); color: var(--critico); }
+
+/* ─── Indicador de upload na foto ─── */
+.foto-card.uploading { opacity: .7; }
+.foto-card.uploading .foto-card-num::after {
+  content: ' · enviando…'; color: var(--muted); font-weight: 400;
+}
+
+/* ─── Modal de link compartilhável ─── */
+#shareModal {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.88); backdrop-filter: blur(12px);
+  z-index: 600; align-items: center; justify-content: center;
+}
+#shareModal.open { display: flex; }
+.share-box {
+  background: var(--surface); border: 1px solid var(--accent);
+  border-radius: 20px; padding: 40px; width: 100%; max-width: 520px;
+  text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+}
+.share-box h3 { font-family: var(--title); font-size: 18px; font-weight: 800; color: var(--accent); margin-bottom: 8px; }
+.share-box p  { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+.share-link-row {
+  display: flex; gap: 10px; align-items: center;
+  background: var(--bg); border: 1px solid var(--line2);
+  border-radius: 10px; padding: 12px 16px; margin-bottom: 20px;
+}
+.share-link-row input {
+  flex: 1; background: transparent; border: none; color: var(--ink);
+  font-family: var(--body); font-size: 13px; outline: none;
+}
+.share-copy-btn {
+  background: var(--accent); color: #000; border: none;
+  font-family: var(--title); font-size: 11px; font-weight: 800;
+  letter-spacing: 1px; padding: 8px 16px; border-radius: 8px;
+  cursor: pointer; white-space: nowrap; transition: .2s;
+}
+.share-copy-btn:hover { background: #bdf000; }
+.share-close { color: var(--muted); font-size: 12px; cursor: pointer; text-decoration: underline; display: block; margin-top: 10px; }
+
+/* Salvar btn loading */
+#btn-save.saving { opacity: .6; pointer-events: none; }
+
+/* ══════════════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════════════ */
 @media (max-width: 680px) {
@@ -549,10 +608,27 @@ body:not(.edit-mode) .sec-text[contenteditable] { pointer-events: none; }
   <button class="tbtn" id="btn-expand" onclick="expandAll()">↓ Expandir</button>
   <button class="tbtn" id="btn-collapse" onclick="collapseAll()">↑ Recolher</button>
   <button class="tbtn" id="btn-resumo" onclick="generateSummary()">⟳ Resumo</button>
+  <button class="tbtn" id="btn-save"   style="display:none" onclick="saveToCloud()">☁️ Salvar</button>
   <button class="tbtn" id="btn-export" style="display:none" onclick="exportReport()">💾 Exportar</button>
   <button class="tbtn accent" onclick="window.print()">🖨 PDF</button>
   <button class="tbtn" id="btn-lock" onclick="toggleAuth()" title="Acesso editor">🔒</button>
 </div>
+
+<!-- MODAL LINK COMPARTILHÁVEL -->
+<div id="shareModal">
+  <div class="share-box">
+    <h3>✅ Relatório salvo!</h3>
+    <p>Envie este link para o cliente — ele abre no navegador com tudo incluído.</p>
+    <div class="share-link-row">
+      <input type="text" id="shareLinkInput" readonly>
+      <button class="share-copy-btn" onclick="copyShareLink()">Copiar</button>
+    </div>
+    <span class="share-close" onclick="document.getElementById('shareModal').classList.remove('open')">Fechar</span>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
 
 <!-- MODAL DE SENHA -->
 <div id="authModal">
@@ -1490,11 +1566,240 @@ document.getElementById('resumo-export').innerHTML = resumoHTML ||
 </html>`;
 }
 
+/* ════════════════════════════════════════════
+   FIREBASE — INICIALIZAÇÃO
+════════════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey:            "AIzaSyC5I4XsXB0oQVXCleJrnZWqtP2KKzTvzBQ",
+  authDomain:        "greco-vistoria.firebaseapp.com",
+  projectId:         "greco-vistoria",
+  storageBucket:     "greco-vistoria.firebasestorage.app",
+  messagingSenderId: "955632075539",
+  appId:             "1:955632075539:web:33a88661cc50722c33d0e6",
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let currentReportId = null;
+
+/* ─── Helpers ─── */
+function showToast(msg, type = 'ok', ms = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = ''; }, ms);
+}
+
+
+function genId() {
+  return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+/* ════════════════════════════════════════════
+   SALVAR NA NUVEM
+════════════════════════════════════════════ */
+/* Comprime foto para versão menor (salvo na nuvem) */
+function compressForCloud(src) {
+  return new Promise(resolve => {
+    if (!src || !src.startsWith('data:')) { resolve(src); return; }
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 900;
+      let w = img.width, h = img.height;
+      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', 0.62));
+    };
+    img.onerror = () => resolve(src);
+    img.src = src;
+  });
+}
+
+async function saveToCloud() {
+  const btn = document.getElementById('btn-save');
+  btn.textContent = '⏳ Salvando…';
+  btn.classList.add('saving');
+
+  try {
+    if (!currentReportId) currentReportId = genId();
+    const rid = currentReportId;
+
+    // ── Capturar textos editáveis ──
+    const textos = [];
+    document.querySelectorAll('.sec-text[contenteditable]').forEach(el => textos.push(el.innerHTML));
+
+    // ── Salvar metadados no documento principal ──
+    showToast('Salvando dados…', 'ok', 60000);
+    await db.collection('reports').doc(rid).set({
+      savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      ficha:   {
+        cliente: document.getElementById('fc').value,
+        emp:     document.getElementById('fe').value,
+        loc:     document.getElementById('fl').value,
+        data:    document.getElementById('fd').value,
+      },
+      itens:   itensState,
+      sintese: sinteseState,
+      textos,
+    });
+
+    // ── Salvar cada foto em subcoleção separada (comprimida) ──
+    const totalFotos = AMBIENTES.reduce((s, a) => s + fotosState[a.id].length, 0);
+    let done = 0;
+
+    for (const amb of AMBIENTES) {
+      for (const foto of fotosState[amb.id]) {
+        done++;
+        showToast(`Salvando fotos… ${done}/${totalFotos}`, 'ok', 60000);
+
+        // Só faz upload se ainda não foi salva ou mudou
+        if (!foto.cloudSaved) {
+          const compressed = await compressForCloud(foto.src);
+          await db.collection('reports').doc(rid)
+            .collection('photos').doc(foto.id).set({
+              ambId:       amb.id,
+              globalNum:   foto.globalNum,
+              src:         compressed,
+              titulo:      foto.titulo      || '',
+              observacao:  foto.observacao  || '',
+              intervencao: foto.intervencao || '',
+            });
+          foto.cloudSaved = true;
+        }
+      }
+    }
+
+    // ── Mostrar link ──
+    const link = `${location.origin}${location.pathname}?r=${rid}`;
+    document.getElementById('shareLinkInput').value = link;
+    document.getElementById('shareModal').classList.add('open');
+    showToast('✅ Salvo!', 'ok');
+
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Erro: ' + err.message, 'err', 6000);
+  } finally {
+    btn.textContent = '☁️ Salvar';
+    btn.classList.remove('saving');
+  }
+}
+
+/* ════════════════════════════════════════════
+   CARREGAR DA NUVEM
+════════════════════════════════════════════ */
+async function loadFromCloud(rid) {
+  showToast('Carregando relatório…', 'ok', 60000);
+  try {
+    const snap = await db.collection('reports').doc(rid).get();
+    if (!snap.exists) { showToast('❌ Relatório não encontrado.', 'err', 5000); return; }
+
+    const d = snap.data();
+    currentReportId = rid;
+
+    // Ficha
+    if (d.ficha) {
+      document.getElementById('fc').value = d.ficha.cliente || '';
+      document.getElementById('fe').value = d.ficha.emp     || '';
+      document.getElementById('fl').value = d.ficha.loc     || '';
+      document.getElementById('fd').value = d.ficha.data    || '';
+    }
+
+    // Itens (com criticidade)
+    if (d.itens) {
+      AMBIENTES.forEach(a => {
+        if (d.itens[a.id]) itensState[a.id] = d.itens[a.id];
+      });
+    }
+
+    // Sínteses
+    if (d.sintese) Object.assign(sinteseState, d.sintese);
+
+    // Fotos — carrega da subcoleção photos
+    const photosSnap = await db.collection('reports').doc(rid).collection('photos').get();
+    let maxNum = 0;
+    AMBIENTES.forEach(a => { fotosState[a.id] = []; });
+    photosSnap.forEach(doc => {
+      const f = doc.data();
+      if (!fotosState[f.ambId]) return;
+      fotosState[f.ambId].push({
+        id:          doc.id,
+        src:         f.src,
+        cloudSaved:  true,
+        titulo:      f.titulo      || '',
+        observacao:  f.observacao  || '',
+        intervencao: f.intervencao || '',
+        globalNum:   f.globalNum   || 0,
+      });
+      if (f.globalNum > maxNum) maxNum = f.globalNum;
+    });
+    // Ordenar por globalNum dentro de cada ambiente
+    AMBIENTES.forEach(a => {
+      fotosState[a.id].sort((x, y) => x.globalNum - y.globalNum);
+    });
+    globalCounter = maxNum;
+
+    // Re-renderizar
+    renderAmbientes();
+    updateFotoIndex();
+
+    // Textos editáveis
+    if (d.textos) {
+      document.querySelectorAll('.sec-text[contenteditable]').forEach((el, i) => {
+        if (d.textos[i] !== undefined) el.innerHTML = d.textos[i];
+      });
+    }
+
+    // Drop zones — esconder onde há fotos
+    AMBIENTES.forEach(a => {
+      if (fotosState[a.id].length > 0) {
+        const drop = document.getElementById('drop-' + a.id);
+        if (drop) drop.classList.add('hidden');
+      }
+    });
+
+    showToast('✅ Relatório carregado!', 'ok');
+
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Erro ao carregar: ' + err.message, 'err', 6000);
+  }
+}
+
+/* ─── Copiar link ─── */
+function copyShareLink() {
+  const inp = document.getElementById('shareLinkInput');
+  inp.select();
+  document.execCommand('copy');
+  showToast('🔗 Link copiado!', 'ok');
+}
+
+/* ════════════════════════════════════════════
+   ATUALIZAR setEditMode para mostrar btn-save
+════════════════════════════════════════════ */
+const _origSetEditMode = setEditMode;
+setEditMode = function() {
+  _origSetEditMode();
+  document.getElementById('btn-save').style.display = '';
+};
+const _origSetViewMode = setViewMode;
+setViewMode = function() {
+  _origSetViewMode();
+  document.getElementById('btn-save').style.display = 'none';
+};
+
 /* ─── INIT ─── */
 renderAmbientes();
 updateFotoIndex();
-// Começa em view mode — desabilitar edição
 setViewMode();
+
+// Verificar se URL tem ?r=ID para carregar relatório salvo
+(function() {
+  const rid = new URLSearchParams(location.search).get('r');
+  if (rid) loadFromCloud(rid);
+})();
 </script>
 </body>
 </html>
