@@ -492,9 +492,32 @@ body:not(.edit-mode) [contenteditable="true"] { pointer-events: none; cursor: de
 body:not(.edit-mode) .item-txt               { pointer-events: none; }
 body:not(.edit-mode) .crit-sel               { pointer-events: none; }
 body:not(.edit-mode) .sec-text[contenteditable] { pointer-events: none; }
-body:not(.edit-mode) textarea,
+body:not(.edit-mode) .sintese-box,
+body:not(.edit-mode) .foto-leg,
+body:not(.edit-mode) .foto-intervencao,
 body:not(.edit-mode) .foto-titulo,
 body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: default; }
+
+/* ─── Lightbox ─── */
+#lightbox {
+  display: none; position: fixed; inset: 0; z-index: 900;
+  background: rgba(0,0,0,0.95); align-items: center; justify-content: center;
+  cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 92vw; max-height: 92vh;
+  object-fit: contain; border-radius: 8px;
+  box-shadow: 0 0 60px rgba(0,0,0,.8);
+  cursor: default;
+}
+#lightbox-close {
+  position: absolute; top: 20px; right: 24px;
+  color: #fff; font-size: 32px; cursor: pointer;
+  background: none; border: none; line-height: 1; opacity: .7;
+  transition: opacity .2s;
+}
+#lightbox-close:hover { opacity: 1; }
 
 /* Badge de modo */
 #mode-badge {
@@ -634,6 +657,12 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
 
 <!-- TOAST -->
 <div id="toast"></div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" onclick="closeLightbox()">
+  <button id="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()">
+</div>
 
 <!-- MODAL DE SENHA -->
 <div id="authModal">
@@ -1145,6 +1174,9 @@ function renderFotos(ambId) {
     img.src = foto.src;
     img.alt = 'Foto ' + num;
     img.loading = 'lazy';
+    img.style.cursor = 'zoom-in';
+    img.title = 'Clique para ampliar';
+    img.addEventListener('click', () => openLightbox(foto.src));
 
     const foot = document.createElement('div');
     foot.className = 'foto-card-foot';
@@ -1238,6 +1270,19 @@ function toggleAmb(id) {
 function expandAll()   { AMBIENTES.forEach(a => document.getElementById('card-'+a.id).classList.remove('closed')); }
 function collapseAll() { AMBIENTES.forEach(a => document.getElementById('card-'+a.id).classList.add('closed')); }
 
+/* ─── LIGHTBOX ─── */
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+  document.addEventListener('keydown', onLightboxKey);
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightbox-img').src = '';
+  document.removeEventListener('keydown', onLightboxKey);
+}
+function onLightboxKey(e) { if (e.key === 'Escape') closeLightbox(); }
+
 /* ─── SCROLL ─── */
 function goTo(sel) {
   const el = document.querySelector(sel);
@@ -1290,7 +1335,7 @@ function setEditMode() {
   document.getElementById('btn-export').style.display = '';
   // Reativar tudo
   document.querySelectorAll('[contenteditable]').forEach(el => el.setAttribute('contenteditable','true'));
-  document.querySelectorAll('input, textarea').forEach(el => el.readOnly = false);
+  document.querySelectorAll('.foto-titulo, .foto-leg, .foto-intervencao, .sintese-box, .ficha-cell input').forEach(el => el.readOnly = false);
   document.querySelectorAll('.crit-sel').forEach(el => el.disabled = false);
 }
 
@@ -1314,7 +1359,7 @@ function setViewMode() {
   document.getElementById('btn-export').style.display = 'none';
   // Desativar contenteditable
   document.querySelectorAll('[contenteditable]').forEach(el => el.setAttribute('contenteditable','false'));
-  document.querySelectorAll('input, textarea').forEach(el => el.readOnly = true);
+  document.querySelectorAll('.foto-titulo, .foto-leg, .foto-intervencao, .sintese-box, .ficha-cell input').forEach(el => el.readOnly = true);
   document.querySelectorAll('.crit-sel').forEach(el => el.disabled = true);
   autoExpandTextareas();
 }
@@ -1780,7 +1825,7 @@ async function loadFromCloud(rid) {
     generateSummary();
     // Aplicar modo leitura nos novos elementos renderizados
     if (!editMode) {
-      document.querySelectorAll('input, textarea').forEach(el => el.readOnly = true);
+      document.querySelectorAll('.foto-titulo, .foto-leg, .foto-intervencao, .sintese-box, .ficha-cell input').forEach(el => el.readOnly = true);
       document.querySelectorAll('.crit-sel').forEach(el => el.disabled = true);
     }
     // Expandir textareas
