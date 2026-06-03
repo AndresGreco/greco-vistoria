@@ -475,9 +475,14 @@ body:not(.edit-mode) .add-item-btn,
 body:not(.edit-mode) .item-del-btn,
 body:not(.edit-mode) .foto-add-btn,
 body:not(.edit-mode) .drop-zone,
-body:not(.edit-mode) #btn-resumo,
 body:not(.edit-mode) #btn-expand,
 body:not(.edit-mode) #btn-collapse { display: none !important; }
+
+/* Textareas sem scrollbar no modo leitura — altura automática */
+body:not(.edit-mode) textarea {
+  overflow: hidden;
+  resize: none;
+}
 
 /* Em modo leitura, inputs da ficha ficam como texto */
 body:not(.edit-mode) .ficha-cell input { pointer-events: none; }
@@ -1290,6 +1295,16 @@ function setEditMode() {
   document.querySelectorAll('.sintese-box').forEach(el => el.readOnly = false);
 }
 
+function autoExpandTextareas() {
+  // Espera um tick para garantir que o DOM está pronto
+  requestAnimationFrame(() => {
+    document.querySelectorAll('textarea').forEach(ta => {
+      ta.style.height = 'auto';
+      ta.style.height = (ta.scrollHeight + 2) + 'px';
+    });
+  });
+}
+
 function setViewMode() {
   editMode = false;
   document.body.classList.remove('edit-mode');
@@ -1303,6 +1318,7 @@ function setViewMode() {
   document.querySelectorAll('.ficha-cell input').forEach(el => el.setAttribute('readonly','true'));
   document.querySelectorAll('.crit-sel').forEach(el => el.disabled = true);
   document.querySelectorAll('.sintese-box').forEach(el => el.readOnly = true);
+  autoExpandTextareas();
 }
 
 /* ════════════════════════════════════════════
@@ -1761,6 +1777,11 @@ async function loadFromCloud(rid) {
         if (d.textos[i] !== undefined) el.innerHTML = d.textos[i];
       });
     }
+
+    // Gerar resumo automaticamente
+    generateSummary();
+    // Expandir textareas
+    autoExpandTextareas();
 
     showToast('✅ Relatório carregado!', 'ok');
 
