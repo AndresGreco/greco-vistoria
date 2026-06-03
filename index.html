@@ -473,6 +473,7 @@ body { font-family: var(--body); background: var(--bg); color: var(--ink); font-
 /* Esconder controles de edição no modo leitura */
 body:not(.edit-mode) .add-item-btn,
 body:not(.edit-mode) .item-del-btn,
+body:not(.edit-mode) .foto-card-del,
 body:not(.edit-mode) .foto-add-btn,
 body:not(.edit-mode) .drop-zone,
 body:not(.edit-mode) #btn-expand,
@@ -1244,21 +1245,52 @@ function updateFotoIndex() {
 function generateSummary() {
   const tbody = document.getElementById('resumo-body');
   tbody.innerHTML = '';
-  let count = 0;
+
+  const grupos = [
+    { crit: 'critico',  label: 'Crítico',  bc: 'rc', itens: [] },
+    { crit: 'moderado', label: 'Moderado', bc: 'rm', itens: [] },
+    { crit: 'estetico', label: 'Estético', bc: 're', itens: [] },
+  ];
 
   AMBIENTES.forEach(amb => {
     (itensState[amb.id] || []).forEach(item => {
       if (!item.crit) return;
-      count++;
-      const bc = item.crit === 'critico' ? 'rc' : item.crit === 'moderado' ? 'rm' : 're';
-      const bl = item.crit === 'critico' ? 'Crítico' : item.crit === 'moderado' ? 'Moderado' : 'Estético';
+      const grupo = grupos.find(g => g.crit === item.crit);
+      if (grupo) grupo.itens.push({ amb: amb.nome, texto: item.texto });
+    });
+  });
+
+  let total = 0;
+  grupos.forEach(grupo => {
+    if (grupo.itens.length === 0) return;
+    total += grupo.itens.length;
+
+    // Linha de cabeçalho do grupo
+    const trHead = document.createElement('tr');
+    trHead.innerHTML = `
+      <td colspan="3" style="
+        background: var(--surface2);
+        padding: 10px 18px;
+        font-family: var(--title);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--line2);
+      ">
+        <span class="r-badge ${grupo.bc}">${grupo.label}</span>
+        <span style="color:var(--muted);margin-left:10px">${grupo.itens.length} item${grupo.itens.length > 1 ? 's' : ''}</span>
+      </td>`;
+    tbody.appendChild(trHead);
+
+    grupo.itens.forEach(it => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${amb.nome}</td><td>${item.texto}</td><td><span class="r-badge ${bc}">${bl}</span></td>`;
+      tr.innerHTML = `<td>${it.amb}</td><td>${it.texto}</td><td><span class="r-badge ${grupo.bc}">${grupo.label}</span></td>`;
       tbody.appendChild(tr);
     });
   });
 
-  if (count === 0) {
+  if (total === 0) {
     tbody.innerHTML = '<tr><td class="resumo-empty" colspan="3">Nenhum item classificado. Classifique os itens em cada ambiente e clique em "⟳ Resumo".</td></tr>';
   }
 }
