@@ -487,14 +487,14 @@ body:not(.edit-mode) textarea {
 /* Em modo leitura, inputs da ficha ficam como texto */
 body:not(.edit-mode) .ficha-cell input { pointer-events: none; }
 
-/* Em modo leitura, contenteditable desativado visualmente */
-body:not(.edit-mode) [contenteditable="true"] {
-  pointer-events: none; cursor: default;
-}
-body:not(.edit-mode) .item-txt { pointer-events: none; }
-body:not(.edit-mode) .crit-sel { pointer-events: none; }
-body:not(.edit-mode) .sintese-box { pointer-events: none; resize: none; }
+/* Em modo leitura — tudo bloqueado */
+body:not(.edit-mode) [contenteditable="true"] { pointer-events: none; cursor: default; }
+body:not(.edit-mode) .item-txt               { pointer-events: none; }
+body:not(.edit-mode) .crit-sel               { pointer-events: none; }
 body:not(.edit-mode) .sec-text[contenteditable] { pointer-events: none; }
+body:not(.edit-mode) textarea,
+body:not(.edit-mode) .foto-titulo,
+body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: default; }
 
 /* Badge de modo */
 #mode-badge {
@@ -1288,11 +1288,10 @@ function setEditMode() {
   document.getElementById('btn-lock').textContent = '🔓';
   document.getElementById('btn-lock').title = 'Sair do modo editor';
   document.getElementById('btn-export').style.display = '';
-  // Reativar contenteditable
+  // Reativar tudo
   document.querySelectorAll('[contenteditable]').forEach(el => el.setAttribute('contenteditable','true'));
-  document.querySelectorAll('.ficha-cell input').forEach(el => el.removeAttribute('readonly'));
+  document.querySelectorAll('input, textarea').forEach(el => el.readOnly = false);
   document.querySelectorAll('.crit-sel').forEach(el => el.disabled = false);
-  document.querySelectorAll('.sintese-box').forEach(el => el.readOnly = false);
 }
 
 function autoExpandTextareas() {
@@ -1315,9 +1314,8 @@ function setViewMode() {
   document.getElementById('btn-export').style.display = 'none';
   // Desativar contenteditable
   document.querySelectorAll('[contenteditable]').forEach(el => el.setAttribute('contenteditable','false'));
-  document.querySelectorAll('.ficha-cell input').forEach(el => el.setAttribute('readonly','true'));
+  document.querySelectorAll('input, textarea').forEach(el => el.readOnly = true);
   document.querySelectorAll('.crit-sel').forEach(el => el.disabled = true);
-  document.querySelectorAll('.sintese-box').forEach(el => el.readOnly = true);
   autoExpandTextareas();
 }
 
@@ -1780,6 +1778,11 @@ async function loadFromCloud(rid) {
 
     // Gerar resumo automaticamente
     generateSummary();
+    // Aplicar modo leitura nos novos elementos renderizados
+    if (!editMode) {
+      document.querySelectorAll('input, textarea').forEach(el => el.readOnly = true);
+      document.querySelectorAll('.crit-sel').forEach(el => el.disabled = true);
+    }
     // Expandir textareas
     autoExpandTextareas();
 
