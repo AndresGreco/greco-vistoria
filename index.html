@@ -865,17 +865,20 @@ const AMBIENTES = [
     mkItem('Revisão elétrica geral'),
     mkItem('Higienização e impermeabilização do mobiliário estofado'),
   ]},
-  { id:'a07', num:'4.7',  nome:'Lavabo', itens:[
+  { id:'a13', num:'4.7',  nome:'Sala de Jantar', itens:[
+    mkItem('Substituição do revestimento de parede (papel de parede/revestimento decorativo)'),
+    mkItem('Substituição ou adequação do mobiliário de apoio do aquário'),
+    mkItem('Recuperação e repintura do teto'),
+    mkItem('Revisão do sistema de áudio embutido'),
+    mkItem('Investigação de sinais de umidade próximos ao aquário'),
+    mkItem('Verificação e recuperação das juntas de movimentação do forro de gesso'),
+  ]},
+  { id:'a07', num:'4.8',  nome:'Lavabo', itens:[
     mkItem('Substituição de elementos sanitários danificados (cuba/vidro)'),
     mkItem('Revisão dos sistemas de drenagem'),
     mkItem('Revisão do sistema hidráulico aparente'),
     mkItem('Substituição de luminárias'),
     mkItem('Fixação e regularização da ducha higiênica'),
-  ]},
-  { id:'a08', num:'4.8',  nome:'Lavanderia / DCE', itens:[
-    mkItem('Revisão do sistema elétrico terminal'),
-    mkItem('Regularização do quadro de distribuição elétrica (QDC)'),
-    mkItem('Recuperação ou substituição de marcenaria comprometida por umidade'),
   ]},
   { id:'a09', num:'4.9',  nome:'Suíte 01', itens:[
     mkItem('Revisão elétrica geral'),
@@ -894,7 +897,17 @@ const AMBIENTES = [
     mkItem('Limpeza técnica de box'),
     mkItem('Regularização de acabamentos e furos aparentes'),
   ]},
-  { id:'a11', num:'4.11', nome:'Suíte Master', itens:[
+  { id:'a12', num:'4.11', nome:'Área Gourmet — 2º Pavimento', itens:[
+    mkItem('Recuperação e recomposição de rejuntamentos'),
+    mkItem('Tratamento preventivo de infiltrações'),
+    mkItem('Recuperação de mobiliário em madeira'),
+    mkItem('Substituição de arandelas'),
+    mkItem('Revisão do sistema de sonorização'),
+    mkItem('Verificação funcional da sauna'),
+    mkItem('Revisão do sistema hidráulico/pressurização'),
+    mkItem('Substituição da marcenaria inferior da bancada'),
+  ]},
+  { id:'a11', num:'4.12', nome:'Suíte Master', itens:[
     mkItem('Recuperação de elementos de marcenaria comprometidos'),
     mkItem('Refixação de ferragens e puxadores'),
     mkItem('Investigação de possíveis infiltrações no forro'),
@@ -904,15 +917,16 @@ const AMBIENTES = [
     mkItem('Revisão de ferragens de portas e pivôs'),
     mkItem('Recuperação do mobiliário do banheiro'),
   ]},
-  { id:'a12', num:'4.12', nome:'Área Gourmet Superior', itens:[
-    mkItem('Recuperação e recomposição de rejuntamentos'),
-    mkItem('Tratamento preventivo de infiltrações'),
-    mkItem('Recuperação de mobiliário em madeira'),
-    mkItem('Substituição de arandelas'),
-    mkItem('Revisão do sistema de sonorização'),
-    mkItem('Verificação funcional da sauna'),
-    mkItem('Revisão do sistema hidráulico/pressurização'),
-    mkItem('Substituição da marcenaria inferior da bancada'),
+  { id:'a14', num:'4.13', nome:'Sala de Estar — 2º Pavimento', itens:[
+    mkItem('Levantamento de intervenções — aguardando vistoria'),
+  ]},
+  { id:'a08', num:'4.14', nome:'DCE — Lavanderia', itens:[
+    mkItem('Revisão do sistema elétrico terminal'),
+    mkItem('Regularização do quadro de distribuição elétrica (QDC)'),
+    mkItem('Recuperação ou substituição de marcenaria comprometida por umidade'),
+  ]},
+  { id:'a15', num:'4.15', nome:'Hall', itens:[
+    mkItem('Levantamento de intervenções — aguardando vistoria'),
   ]},
 ];
 
@@ -1737,6 +1751,12 @@ async function saveToCloud() {
       textos,
     });
 
+    // ── Apagar todas as fotos antigas no Firebase antes de salvar ──
+    // (evita duplicatas de sessões anteriores)
+    showToast('Limpando fotos antigas…', 'ok', 60000);
+    const oldPhotos = await db.collection('reports').doc(rid).collection('photos').get();
+    await Promise.all(oldPhotos.docs.map(d => d.ref.delete()));
+
     // ── Salvar cada foto em subcoleção separada (comprimida) ──
     const totalFotos = AMBIENTES.reduce((s, a) => s + fotosState[a.id].length, 0);
     let done = 0;
@@ -1745,21 +1765,17 @@ async function saveToCloud() {
       for (const foto of fotosState[amb.id]) {
         done++;
         showToast(`Salvando fotos… ${done}/${totalFotos}`, 'ok', 60000);
-
-        // Só faz upload se ainda não foi salva ou mudou
-        if (!foto.cloudSaved) {
-          const compressed = await compressForCloud(foto.src);
-          await db.collection('reports').doc(rid)
-            .collection('photos').doc(foto.id).set({
-              ambId:       amb.id,
-              globalNum:   foto.globalNum,
-              src:         compressed,
-              titulo:      foto.titulo      || '',
-              observacao:  foto.observacao  || '',
-              intervencao: foto.intervencao || '',
-            });
-          foto.cloudSaved = true;
-        }
+        const compressed = await compressForCloud(foto.src);
+        await db.collection('reports').doc(rid)
+          .collection('photos').doc(foto.id).set({
+            ambId:       amb.id,
+            globalNum:   foto.globalNum,
+            src:         compressed,
+            titulo:      foto.titulo      || '',
+            observacao:  foto.observacao  || '',
+            intervencao: foto.intervencao || '',
+          });
+        foto.cloudSaved = true;
       }
     }
 
