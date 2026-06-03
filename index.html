@@ -1741,8 +1741,18 @@ async function loadFromCloud(rid) {
     });
     globalCounter = maxNum;
 
-    // Re-renderizar
+    // Re-renderizar ambientes (cria os elementos do DOM)
     renderAmbientes();
+
+    // Renderizar fotos em cada ambiente (precisa ser após renderAmbientes)
+    AMBIENTES.forEach(a => {
+      if (fotosState[a.id].length > 0) {
+        renderFotos(a.id);
+        const drop = document.getElementById('drop-' + a.id);
+        if (drop) drop.classList.add('hidden');
+      }
+    });
+
     updateFotoIndex();
 
     // Textos editáveis
@@ -1751,14 +1761,6 @@ async function loadFromCloud(rid) {
         if (d.textos[i] !== undefined) el.innerHTML = d.textos[i];
       });
     }
-
-    // Drop zones — esconder onde há fotos
-    AMBIENTES.forEach(a => {
-      if (fotosState[a.id].length > 0) {
-        const drop = document.getElementById('drop-' + a.id);
-        if (drop) drop.classList.add('hidden');
-      }
-    });
 
     showToast('✅ Relatório carregado!', 'ok');
 
