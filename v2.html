@@ -11,15 +11,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
-/*
-MAPA RÁPIDO DO ARQUIVO
-- CSS geral: início do arquivo, dentro da tag <style>.
-- CSS de impressão/PDF: procure por "AJUSTE PDF — SEM SCROLL".
-- Botão PDF principal: procure por "prepararPDF()" no topbar.
-- Funções de PDF: procure por "FUNÇÕES DO PDF" perto do final do <script>.
-- Firebase: procure por "SALVAR NA NUVEM" e "CARREGAR DA NUVEM".
-*/
-
+/* MAPA RÁPIDO: CSS geral começa aqui; ajuste do PDF sem scroll perto da linha ~620; JavaScript no fim do arquivo. */
 /* ══════════════════════════════════════════════
    GRECO ARQUITETURA — VISTORIA APP
    Variáveis da Marca
@@ -635,6 +627,51 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
   .crit-grid { grid-template-columns: 1fr; }
   .fotos-grid { grid-template-columns: 1fr; }
 }
+
+
+/* ═════════════════════════════════════════════════════════════
+   AJUSTE PDF SEM SCROLL — LINHA ~620
+   O navegador imprime <textarea> como campo de formulário e mantém
+   barra de rolagem. Este bloco cria um "espelho" visual em texto comum
+   somente na impressão. Na tela normal, nada muda.
+═════════════════════════════════════════════════════════════ */
+.print-textarea-mirror { display: none; }
+
+@media print {
+  textarea.print-hidden { display: none !important; }
+
+  .print-textarea-mirror {
+    display: block !important;
+    width: 100%;
+    white-space: pre-wrap;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: unset !important;
+    max-height: none !important;
+    border: 1px solid #d7d7d7;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: var(--body);
+    font-size: 12px;
+    line-height: 1.5;
+    color: #333;
+    background: #fff;
+    box-sizing: border-box;
+  }
+
+  .foto-intervencao + .print-textarea-mirror,
+  .sintese-box + .print-textarea-mirror {
+    background: #f9f9f2;
+  }
+
+  .foto-card,
+  .amb-card,
+  .sintese-wrap {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1395,19 +1432,13 @@ function setEditMode() {
 }
 
 function autoExpandTextareas() {
-  /*
-    FUNÇÃO: autoExpandTextareas
-    O que faz: aumenta automaticamente a altura dos campos de texto na tela.
-    Observação: isso melhora a visualização, mas sozinho NÃO resolve o PDF.
-    O PDF é resolvido pelas funções criarEspelhosDeTextoParaPrint/prepararPDF.
-  */
-  requestAnimationFrame(() => {
-    document.querySelectorAll('textarea').forEach(ta => {
-      ta.style.overflow = 'hidden';
-      ta.style.resize = 'none';
-      ta.style.height = 'auto';
-      ta.style.height = (ta.scrollHeight + 8) + 'px';
-    });
+  /* LINHA ~1388 — Ajusta a altura dos campos de texto na tela.
+     Isso melhora a leitura no navegador, mas sozinho não resolve o PDF. */
+  document.querySelectorAll('textarea').forEach(ta => {
+    ta.style.overflow = 'hidden';
+    ta.style.resize = 'none';
+    ta.style.height = 'auto';
+    ta.style.height = (ta.scrollHeight + 8) + 'px';
   });
 }
 
@@ -1683,8 +1714,8 @@ _AMBIENTES_EXPORT.forEach(amb => {
 document.getElementById('resumo-export').innerHTML = resumoHTML ||
   '<tr><td class="resumo-empty" colspan="3">Nenhum item classificado.</td></tr>';
 
-// FUNÇÕES DO PDF DO HTML EXPORTADO
-// Mesma lógica do app principal: textarea vira div temporária na hora da impressão.
+
+/* PDF sem scroll também no HTML exportado */
 function autoExpandTextareas() {
   document.querySelectorAll('textarea').forEach(ta => {
     ta.style.overflow = 'hidden';
@@ -1693,125 +1724,34 @@ function autoExpandTextareas() {
     ta.style.height = (ta.scrollHeight + 8) + 'px';
   });
 }
-
 function criarEspelhosDeTextoParaPrint() {
   document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
   document.querySelectorAll('textarea').forEach(ta => {
     const mirror = document.createElement('div');
     mirror.className = 'print-textarea-mirror';
-    if (ta.classList.contains('foto-intervencao')) mirror.classList.add('print-intervencao');
-    if (ta.classList.contains('sintese-box')) mirror.classList.add('print-sintese');
     mirror.textContent = ta.value || ta.textContent || '';
     ta.classList.add('print-hidden');
     ta.insertAdjacentElement('afterend', mirror);
   });
 }
-
 function limparEspelhosDeTextoParaPrint() {
   document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
   document.querySelectorAll('textarea.print-hidden').forEach(ta => ta.classList.remove('print-hidden'));
 }
-
 function prepararPDF() {
   document.querySelectorAll('.amb-card.closed').forEach(card => card.classList.remove('closed'));
   autoExpandTextareas();
   criarEspelhosDeTextoParaPrint();
   setTimeout(() => window.print(), 300);
 }
-
 window.addEventListener('load', autoExpandTextareas);
-window.addEventListener('beforeprint', () => {
-  document.querySelectorAll('.amb-card.closed').forEach(card => card.classList.remove('closed'));
-  autoExpandTextareas();
-  criarEspelhosDeTextoParaPrint();
-});
+window.addEventListener('beforeprint', () => { autoExpandTextareas(); criarEspelhosDeTextoParaPrint(); });
 window.addEventListener('afterprint', limparEspelhosDeTextoParaPrint);
 
 <\/script>
 </body>
 </html>`;
 }
-
-
-
-/* ════════════════════════════════════════════
-   FUNÇÕES DO PDF — CORREÇÃO DO SCROLL DOS TEXTOS
-   LOCALIZAÇÃO APROX.: ANTES DO BLOCO FIREBASE
-
-   Ideia simples:
-   - O app usa textarea para editar textos.
-   - O navegador imprime textarea com barra de rolagem.
-   - Antes de imprimir, criamos uma <div> igual ao texto.
-   - Na impressão, escondemos o textarea e mostramos a <div>.
-════════════════════════════════════════════ */
-function criarEspelhosDeTextoParaPrint() {
-  /*
-    FUNÇÃO: criarEspelhosDeTextoParaPrint
-    O que faz:
-    1. Apaga espelhos antigos, se existirem.
-    2. Percorre todos os <textarea> do relatório.
-    3. Cria uma <div> com o mesmo texto.
-    4. Marca o textarea para ser escondido no PDF.
-
-    Resultado: no PDF aparece texto normal, sem barra de rolagem.
-  */
-  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
-
-  document.querySelectorAll('textarea').forEach(ta => {
-    const mirror = document.createElement('div');
-    mirror.className = 'print-textarea-mirror';
-
-    if (ta.classList.contains('foto-intervencao')) mirror.classList.add('print-intervencao');
-    if (ta.classList.contains('sintese-box')) mirror.classList.add('print-sintese');
-
-    mirror.textContent = ta.value || ta.textContent || '';
-
-    ta.classList.add('print-hidden');
-    ta.insertAdjacentElement('afterend', mirror);
-  });
-}
-
-function limparEspelhosDeTextoParaPrint() {
-  /*
-    FUNÇÃO: limparEspelhosDeTextoParaPrint
-    O que faz: depois que o PDF/print termina, remove as divs temporárias
-    e devolve os textareas ao estado normal do app.
-  */
-  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
-  document.querySelectorAll('textarea.print-hidden').forEach(ta => {
-    ta.classList.remove('print-hidden');
-  });
-}
-
-function prepararPDF() {
-  /*
-    FUNÇÃO: prepararPDF
-    O que faz quando você clica no botão PDF:
-    1. Expande todos os ambientes.
-    2. Ajusta a altura dos campos de texto na tela.
-    3. Cria os espelhos de texto para impressão.
-    4. Chama o print/PDF do navegador.
-  */
-  expandAll();
-  autoExpandTextareas();
-  criarEspelhosDeTextoParaPrint();
-
-  setTimeout(() => {
-    window.print();
-  }, 300);
-}
-
-window.addEventListener('beforeprint', () => {
-  /*
-    Segurança extra: alguns navegadores chamam a impressão por atalho
-    Ctrl+P. Assim, mesmo sem clicar no botão, o PDF é preparado.
-  */
-  expandAll();
-  autoExpandTextareas();
-  criarEspelhosDeTextoParaPrint();
-});
-
-window.addEventListener('afterprint', limparEspelhosDeTextoParaPrint);
 
 /* ════════════════════════════════════════════
    FIREBASE — INICIALIZAÇÃO
@@ -2053,11 +1993,55 @@ setViewMode = function() {
 
 
 
-/* Ajusta a altura dos textareas enquanto você digita. */
-document.addEventListener('input', function(e) {
-  if (e.target.matches('textarea')) {
-    e.target.style.overflow = 'hidden';
-    e.target.style.resize = 'none';
+/* ═════════════════════════════════════════════════════════════
+   FUNÇÕES DO PDF SEM SCROLL — LINHA ~1880
+   Resumo simples:
+   - criarEspelhosDeTextoParaPrint(): copia cada textarea para uma div.
+   - limparEspelhosDeTextoParaPrint(): apaga essas divs depois do PDF.
+   - prepararPDF(): expande tudo, cria as cópias e abre a janela de imprimir.
+   - beforeprint/afterprint: garante o mesmo efeito se usar Ctrl+P.
+═════════════════════════════════════════════════════════════ */
+function criarEspelhosDeTextoParaPrint() {
+  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
+
+  document.querySelectorAll('textarea').forEach(ta => {
+    const mirror = document.createElement('div');
+    mirror.className = 'print-textarea-mirror';
+    mirror.textContent = ta.value || ta.textContent || '';
+
+    ta.classList.add('print-hidden');
+    ta.insertAdjacentElement('afterend', mirror);
+  });
+}
+
+function limparEspelhosDeTextoParaPrint() {
+  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
+  document.querySelectorAll('textarea.print-hidden').forEach(ta => {
+    ta.classList.remove('print-hidden');
+  });
+}
+
+function prepararPDF() {
+  expandAll();
+  autoExpandTextareas();
+  criarEspelhosDeTextoParaPrint();
+
+  setTimeout(() => {
+    window.print();
+  }, 300);
+}
+
+window.addEventListener('beforeprint', () => {
+  expandAll();
+  autoExpandTextareas();
+  criarEspelhosDeTextoParaPrint();
+});
+
+window.addEventListener('afterprint', limparEspelhosDeTextoParaPrint);
+
+// Autoajuste enquanto digita em qualquer textarea.
+document.addEventListener('input', e => {
+  if (e.target && e.target.matches('textarea')) {
     e.target.style.height = 'auto';
     e.target.style.height = (e.target.scrollHeight + 8) + 'px';
   }
