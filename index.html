@@ -464,13 +464,15 @@ textarea,
   .sintese-wrap { border-top-color: #ccc; }
   .sintese-label { color: #333; }
 
-  /* ── TEXTAREA no print: sem scroll, altura total ── */
+  /* ── TEXTAREA no print: sem scroll, altura total ──
+     NÃO colocar height: auto !important aqui —
+     o !important sobrescreveria os inline heights
+     definidos pelo JS em prepararPDF(). ── */
   textarea,
   .foto-leg,
   .foto-intervencao,
   .sintese-box {
     overflow: visible !important;
-    height: auto !important;
     min-height: unset !important;
     white-space: pre-wrap;
     color: #333;
