@@ -287,19 +287,32 @@ body { font-family: var(--body); background: var(--bg); color: var(--ink); font-
 }
 .foto-titulo:focus { border-bottom-color: var(--accent); }
 .foto-titulo::placeholder { color: var(--muted); font-weight: 400; }
+
+/* ── TEXTAREA: sem scroll, cresce com o conteúdo ── */
+textarea,
+.foto-leg,
+.foto-intervencao,
+.sintese-box {
+  overflow: hidden !important;
+  resize: none !important;
+  height: auto;
+  min-height: 0 !important;
+  box-sizing: border-box;
+}
+
 .foto-leg {
   width: 100%; background: transparent; border: 1px solid var(--line2);
   border-radius: 6px; color: var(--ink2); font-family: var(--body);
-  font-size: 12px; padding: 8px 10px; resize: vertical; outline: none;
-  transition: .2s; min-height: 52px; line-height: 1.5;
+  font-size: 12px; padding: 8px 10px; outline: none;
+  transition: .2s; line-height: 1.5;
 }
 .foto-leg:focus { border-color: var(--accent); }
 .foto-leg::placeholder { color: var(--muted); }
 .foto-intervencao {
   width: 100%; background: rgba(207,255,4,0.04); border: 1px solid rgba(207,255,4,0.15);
   border-radius: 6px; color: var(--ink2); font-family: var(--body);
-  font-size: 12px; padding: 8px 10px; resize: vertical; outline: none;
-  transition: .2s; min-height: 42px; line-height: 1.5;
+  font-size: 12px; padding: 8px 10px; outline: none;
+  transition: .2s; line-height: 1.5;
 }
 .foto-intervencao:focus { border-color: var(--accent); }
 .foto-intervencao::placeholder { color: var(--muted); }
@@ -340,8 +353,8 @@ body { font-family: var(--body); background: var(--bg); color: var(--ink); font-
 .sintese-box {
   width: 100%; background: rgba(207,255,4,0.04); border: 1px solid rgba(207,255,4,0.18);
   border-radius: 8px; color: var(--ink2); font-family: var(--body);
-  font-size: 13px; padding: 14px 16px; resize: vertical; outline: none;
-  transition: .2s; min-height: 100px; line-height: 1.7;
+  font-size: 13px; padding: 14px 16px; outline: none;
+  transition: .2s; line-height: 1.7;
 }
 .sintese-box:focus { border-color: var(--accent); }
 .sintese-box::placeholder { color: var(--muted); }
@@ -447,27 +460,24 @@ body { font-family: var(--body); background: var(--bg); color: var(--ink); font-
   .sintese-wrap { border-top-color: #ccc; }
   .sintese-label { color: #333; }
 
-  /* ── TEXTAREA → DIV no print: sem scroll, altura total ── */
-  .print-div {
-    display: block !important;
-    font-family: 'Open Sans', sans-serif;
-    font-size: 12px;
-    line-height: 1.6;
-    color: #333;
-    background: #f9f9f2;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 8px 10px;
-    white-space: pre-wrap;
-    word-break: break-word;
+  /* ── TEXTAREA no print: sem scroll, sem altura fixa ── */
+  textarea,
+  .foto-leg,
+  .foto-intervencao,
+  .sintese-box {
     overflow: visible !important;
     height: auto !important;
     min-height: unset !important;
-    width: 100%;
+    white-space: pre-wrap;
+    color: #333;
+    background: #f9f9f9;
+    border-color: #ccc !important;
   }
-  .print-div.sintese { background: #f9f9f2; border-color: #ccc; }
-  .print-div.leg     { background: #fff;    border-color: #ccc; }
-  .print-div.interv  { background: #f9f9f2; border-color: #bbb; }
+
+  .foto-card, .amb-card, .sintese-wrap, .foto-zone {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 
   .resumo-wrap { border-color: #ccc; background: #fff; }
   .resumo-table th { background: #000; color: #fff; }
@@ -483,10 +493,7 @@ body { font-family: var(--body); background: var(--bg); color: var(--ink); font-
 
 /* ══════════════════════════════════════════════
    MODO LEITURA × MODO EDIÇÃO
-   Por padrão: view mode. Edit mode via senha.
 ══════════════════════════════════════════════ */
-
-/* Esconder controles de edição no modo leitura */
 body:not(.edit-mode) .add-item-btn,
 body:not(.edit-mode) .item-del-btn,
 body:not(.edit-mode) .foto-card-del,
@@ -495,16 +502,7 @@ body:not(.edit-mode) .drop-zone,
 body:not(.edit-mode) #btn-expand,
 body:not(.edit-mode) #btn-collapse { display: none !important; }
 
-/* Textareas sem scrollbar no modo leitura — altura automática */
-body:not(.edit-mode) textarea {
-  overflow: hidden;
-  resize: none;
-}
-
-/* Em modo leitura, inputs da ficha ficam como texto */
 body:not(.edit-mode) .ficha-cell input { pointer-events: none; }
-
-/* Em modo leitura — tudo bloqueado */
 body:not(.edit-mode) [contenteditable="true"] { pointer-events: none; cursor: default; }
 body:not(.edit-mode) .item-txt               { pointer-events: none; }
 body:not(.edit-mode) .crit-sel               { pointer-events: none; }
@@ -536,7 +534,6 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
 }
 #lightbox-close:hover { opacity: 1; }
 
-/* Badge de modo */
 #mode-badge {
   font-family: var(--title); font-size: 10px; font-weight: 700;
   letter-spacing: 1px; padding: 5px 12px; border-radius: 20px;
@@ -591,7 +588,6 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
 #toast.ok   { border-color: var(--accent); color: var(--accent); }
 #toast.err  { border-color: var(--critico); color: var(--critico); }
 
-/* ─── Indicador de upload na foto ─── */
 .foto-card.uploading { opacity: .7; }
 .foto-card.uploading .foto-card-num::after {
   content: ' · enviando…'; color: var(--muted); font-weight: 400;
@@ -629,7 +625,6 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
 .share-copy-btn:hover { background: #bdf000; }
 .share-close { color: var(--muted); font-size: 12px; cursor: pointer; text-decoration: underline; display: block; margin-top: 10px; }
 
-/* Salvar btn loading */
 #btn-save.saving { opacity: .6; pointer-events: none; }
 
 /* ══════════════════════════════════════════════
@@ -642,28 +637,6 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
   .crit-grid { grid-template-columns: 1fr; }
   .fotos-grid { grid-template-columns: 1fr; }
 }
-
-
-
-@media print {
-  textarea,
-  .foto-leg,
-  .foto-intervencao,
-  .sintese-box {
-    overflow: visible !important;
-    resize: none !important;
-    height: auto !important;
-    min-height: unset !important;
-  }
-
-  .foto-card,
-  .amb-card,
-  .sintese-wrap {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-}
-
 </style>
 <style>
 /* Exportado — sempre view mode */
@@ -814,7 +787,7 @@ _AMBIENTES_EXPORT.forEach(amb => {
     : (sintese ? '<div class="foto-zone">'+sinteseHTML+'</div>' : '');
 
   ambRoot.innerHTML += '<div class="amb-wrap"><div class="amb-card" id="card-'+amb.id+'">'
-    +'<div class="amb-hdr" onclick="this.closest('.amb-card').classList.toggle('closed')">'
+    +'<div class="amb-hdr" onclick="this.closest(\'.amb-card\').classList.toggle(\'closed\')">'
     +'<span class="amb-num">'+amb.num+'</span><span class="amb-name">'+amb.nome+'</span>'
     +'<span class="amb-chevron">▾</span></div>'
     +'<div class="amb-body"><ul class="itens-list">'+itensHTML+'</ul>'+fotoZoneHTML+'</div>'
@@ -854,43 +827,52 @@ document.getElementById('resumo-export').innerHTML = resumoHTML ||
 
 
 // ══════════════════════════════════════════════
-// PREPARAR PDF — converte textareas em divs
-// para garantir que todo o texto apareça no PDF
+// AUTO-EXPAND: ajusta altura de todas as textareas
+// ao conteúdo — sem scroll, sem altura fixa.
+// Roda ao carregar e ao usar Ctrl+P.
 // ══════════════════════════════════════════════
-function prepararPDF() {
-  // 1. Expandir todos os ambientes fechados
-  document.querySelectorAll('.amb-card.closed').forEach(el => el.classList.remove('closed'));
-
-  // 2. Converter textareas em divs temporários
-  const textareas = document.querySelectorAll('textarea.foto-leg, textarea.foto-intervencao, textarea.sintese-box');
-  textareas.forEach(ta => {
-    const div = document.createElement('div');
-    div.className = 'print-div ' + (
-      ta.classList.contains('sintese-box') ? 'sintese' :
-      ta.classList.contains('foto-intervencao') ? 'interv' : 'leg'
-    );
-    div.textContent = ta.value;
-    div.dataset.printReplace = 'true';
-    ta.parentNode.insertBefore(div, ta);
-    ta.style.display = 'none';
-    ta.dataset.hiddenForPrint = 'true';
-  });
-
-  // 3. Imprimir após um tick para garantir reflow
-  setTimeout(() => {
-    window.print();
-
-    // 4. Restaurar após o print
-    setTimeout(() => {
-      document.querySelectorAll('[data-print-replace="true"]').forEach(div => div.remove());
-      document.querySelectorAll('[data-hidden-for-print="true"]').forEach(ta => {
-        ta.style.display = '';
-        delete ta.dataset.hiddenForPrint;
-      });
-    }, 1000);
-  }, 150);
+function autoExpandTextarea(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
 }
 
+function autoExpandTextareas() {
+  document.querySelectorAll('textarea').forEach(function(el) {
+    autoExpandTextarea(el);
+  });
+}
+
+// ══════════════════════════════════════════════
+// PREPARAR PDF:
+// 1. Abre todos os ambientes fechados
+// 2. Expande todas as textareas
+// 3. Aguarda reflow e abre impressão
+// ══════════════════════════════════════════════
+function prepararPDF() {
+  // Abrir todos os ambientes fechados
+  document.querySelectorAll('.amb-card.closed').forEach(function(el) {
+    el.classList.remove('closed');
+  });
+  // Expandir textareas
+  autoExpandTextareas();
+  // Pequeno delay para garantir reflow antes do print
+  setTimeout(function() {
+    window.print();
+  }, 200);
+}
+
+// Roda ao carregar a página
+document.addEventListener('DOMContentLoaded', function() {
+  autoExpandTextareas();
+});
+
+// Roda também se o usuário usar Ctrl+P diretamente
+window.addEventListener('beforeprint', function() {
+  document.querySelectorAll('.amb-card.closed').forEach(function(el) {
+    el.classList.remove('closed');
+  });
+  autoExpandTextareas();
+});
 </script>
 </body>
 </html>
