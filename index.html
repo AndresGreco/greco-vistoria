@@ -320,7 +320,10 @@ textarea,
 .foto-intervencao:focus { border-color: var(--accent); }
 .foto-intervencao::placeholder { color: var(--muted); }
 
-/* ─── Botões de item dinâmico ─── */
+/* ── PDF mirror: oculto na tela, visível só no print ── */
+.pdf-mirror { display: none; }
+
+
 .add-item-btn {
   width: 100%; background: transparent;
   border: 1px dashed rgba(255,255,255,0.12); color: var(--muted);
@@ -464,20 +467,31 @@ textarea,
   .sintese-wrap { border-top-color: #ccc; }
   .sintese-label { color: #333; }
 
-  /* ── TEXTAREA no print: sem scroll, altura total ──
-     NÃO colocar height: auto !important aqui —
-     o !important sobrescreveria os inline heights
-     definidos pelo JS em prepararPDF(). ── */
-  textarea,
-  .foto-leg,
-  .foto-intervencao,
-  .sintese-box {
-    overflow: visible !important;
-    min-height: unset !important;
+  /* ── TEXTAREA no print: esconde (Chrome imprime scroll nativo)
+     O JS de prepararPDF() substitui por divs antes do print. ── */
+  textarea.has-mirror { display: none !important; }
+
+  /* ── Div espelho: mostra no lugar das textareas ── */
+  .pdf-mirror {
+    display: block !important;
     white-space: pre-wrap;
-    color: #333;
+    word-break: break-word;
+    overflow: visible;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
     background: #f9f9f9;
-    border-color: #ccc !important;
+    color: #333;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .pdf-mirror.is-sintese {
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 14px 16px;
   }
 
   .foto-card, .amb-card, .sintese-wrap, .foto-zone {
@@ -973,21 +987,51 @@ function autoExpandTextareas() {
 }
 
 /* ══════════════════════════════════════════════
+   CRIAR / LIMPAR ESPELHOS PDF
+   Chrome imprime textarea com scroll nativo — solução:
+   substituir por divs antes do print, restaurar depois.
+══════════════════════════════════════════════ */
+function criarEspelhosPDF() {
+  document.querySelectorAll('textarea').forEach(function(ta) {
+    if (ta.classList.contains('has-mirror')) return; // já tem espelho
+    var div = document.createElement('div');
+    div.className = 'pdf-mirror' + (ta.classList.contains('sintese-box') ? ' is-sintese' : '');
+    div.textContent = ta.value;
+    ta.classList.add('has-mirror');
+    ta.insertAdjacentElement('afterend', div);
+  });
+}
+
+function limparEspelhosPDF() {
+  document.querySelectorAll('textarea.has-mirror').forEach(function(ta) {
+    ta.classList.remove('has-mirror');
+    var next = ta.nextElementSibling;
+    if (next && next.classList.contains('pdf-mirror')) next.remove();
+  });
+}
+
+/* ══════════════════════════════════════════════
    PREPARAR PDF
    1. Expande todos os ambientes
-   2. Expande todas as textareas
+   2. Cria divs espelho (sem scroll nativo)
    3. Abre impressão após reflow
+   4. Restaura após fechar o print
 ══════════════════════════════════════════════ */
 function prepararPDF() {
   expandAll();
-  autoExpandTextareas();
-  setTimeout(function() { window.print(); }, 250);
+  criarEspelhosPDF();
+  setTimeout(function() { window.print(); }, 200);
 }
 
-// Garante expansão também no Ctrl+P direto
+// Ctrl+P direto: cria espelhos antes de imprimir
 window.addEventListener('beforeprint', function() {
   expandAll();
-  autoExpandTextareas();
+  criarEspelhosPDF();
+});
+
+// Restaura textareas após fechar o print
+window.addEventListener('afterprint', function() {
+  limparEspelhosPDF();
 });
 
 /* ══════════════════════════════════════════════
@@ -1514,12 +1558,30 @@ _AMBIENTES_EXPORT.forEach(amb => {
 document.getElementById('resumo-export').innerHTML = resumoHTML || '<tr><td class="resumo-empty" colspan="3">Nenhum item classificado.</td></tr>';
 function autoExpandTextarea(el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
 function autoExpandTextareas() { requestAnimationFrame(function(){ document.querySelectorAll('textarea').forEach(function(ta){ autoExpandTextarea(ta); }); }); }
+function criarEspelhosPDF() {
+  document.querySelectorAll('textarea').forEach(function(ta) {
+    if (ta.classList.contains('has-mirror')) return;
+    var div = document.createElement('div');
+    div.className = 'pdf-mirror' + (ta.classList.contains('sintese-box') ? ' is-sintese' : '');
+    div.textContent = ta.value;
+    ta.classList.add('has-mirror');
+    ta.insertAdjacentElement('afterend', div);
+  });
+}
+function limparEspelhosPDF() {
+  document.querySelectorAll('textarea.has-mirror').forEach(function(ta) {
+    ta.classList.remove('has-mirror');
+    var next = ta.nextElementSibling;
+    if (next && next.classList.contains('pdf-mirror')) next.remove();
+  });
+}
 function prepararPDF() {
   document.querySelectorAll('.amb-card.closed').forEach(function(el){ el.classList.remove('closed'); });
-  autoExpandTextareas();
-  setTimeout(function(){ window.print(); }, 250);
+  criarEspelhosPDF();
+  setTimeout(function(){ window.print(); }, 200);
 }
-window.addEventListener('beforeprint', function(){ document.querySelectorAll('.amb-card.closed').forEach(function(el){ el.classList.remove('closed'); }); autoExpandTextareas(); });
+window.addEventListener('beforeprint', function(){ document.querySelectorAll('.amb-card.closed').forEach(function(el){ el.classList.remove('closed'); }); criarEspelhosPDF(); });
+window.addEventListener('afterprint', limparEspelhosPDF);
 document.addEventListener('DOMContentLoaded', autoExpandTextareas);
 <\/script>
 </body>
