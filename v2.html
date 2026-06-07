@@ -11,18 +11,14 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
-
-/* ══════════════════════════════════════════════
-   MAPA RÁPIDO DO ARQUIVO
-   - Linhas 01–630 aprox.: CSS visual do relatório.
-   - Linha 620 aprox.: bloco [AJUSTE PDF — BLOCO 01].
-   - Linha 640 aprox.: botão PDF principal.
-   - Linha 790 aprox.: lista de ambientes e itens iniciais.
-   - Linha 1380 aprox.: funções de modo editor + [AJUSTE PDF — BLOCO 02].
-   - Linha 1470 aprox.: função buildExportHTML, que gera HTML exportado.
-   - Linha 1800 aprox.: [AJUSTE PDF — BLOCO 03], usado no HTML exportado.
-   - Linha 1850+ aprox.: Firebase, salvar/carregar relatório e inicialização.
-══════════════════════════════════════════════ */
+/*
+MAPA RÁPIDO DO ARQUIVO
+- CSS geral: início do arquivo, dentro da tag <style>.
+- CSS de impressão/PDF: procure por "AJUSTE PDF — SEM SCROLL".
+- Botão PDF principal: procure por "prepararPDF()" no topbar.
+- Funções de PDF: procure por "FUNÇÕES DO PDF" perto do final do <script>.
+- Firebase: procure por "SALVAR NA NUVEM" e "CARREGAR DA NUVEM".
+*/
 
 /* ══════════════════════════════════════════════
    GRECO ARQUITETURA — VISTORIA APP
@@ -639,66 +635,6 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
   .crit-grid { grid-template-columns: 1fr; }
   .fotos-grid { grid-template-columns: 1fr; }
 }
-
-
-/* ══════════════════════════════════════════════
-   [AJUSTE PDF — BLOCO 01]
-   Local aproximado no arquivo: antes do </style>, perto da linha 620.
-
-   PARA QUE SERVE:
-   - O navegador imprime textarea como campo de formulário e mantém scrollbar.
-   - Este bloco cria uma "cópia visual" do texto para impressão.
-   - Na tela normal nada muda. No PDF, o textarea some e aparece um bloco de texto comum.
-══════════════════════════════════════════════ */
-.print-textarea-mirror {
-  display: none;
-}
-
-/* Textareas sem barra enquanto você edita/visualiza */
-textarea,
-.foto-leg,
-.foto-intervencao,
-.sintese-box {
-  overflow: hidden !important;
-  resize: none !important;
-}
-
-@media print {
-  textarea.print-hidden {
-    display: none !important;
-  }
-
-  .print-textarea-mirror {
-    display: block !important;
-    width: 100%;
-    white-space: pre-wrap;
-    overflow: visible !important;
-    height: auto !important;
-    min-height: unset !important;
-    border: 1px solid #d7d7d7;
-    border-radius: 6px;
-    padding: 10px 12px;
-    font-family: var(--body);
-    font-size: 12px;
-    line-height: 1.55;
-    color: #222;
-    background: #fff;
-    box-sizing: border-box;
-  }
-
-  .foto-intervencao + .print-textarea-mirror,
-  .sintese-box + .print-textarea-mirror {
-    background: #f9f9f2;
-  }
-
-  .foto-card,
-  .amb-card,
-  .sintese-wrap {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-}
-
 </style>
 </head>
 <body>
@@ -1458,101 +1394,22 @@ function setEditMode() {
   document.querySelectorAll('.crit-sel').forEach(el => el.disabled = false);
 }
 
-/* ══════════════════════════════════════════════
-   [AJUSTE PDF — BLOCO 02]
-   Local aproximado: depois das funções de modo editor, perto da linha 1380.
-
-   FUNÇÃO: autoExpandTextareas()
-   - Faz os campos de texto crescerem conforme o conteúdo.
-   - Evita que o texto fique escondido dentro da caixa na tela.
-══════════════════════════════════════════════ */
 function autoExpandTextareas() {
-  document.querySelectorAll('textarea').forEach(ta => {
-    ta.style.overflow = 'hidden';
-    ta.style.resize = 'none';
-    ta.style.height = 'auto';
-    ta.style.height = (ta.scrollHeight + 8) + 'px';
+  /*
+    FUNÇÃO: autoExpandTextareas
+    O que faz: aumenta automaticamente a altura dos campos de texto na tela.
+    Observação: isso melhora a visualização, mas sozinho NÃO resolve o PDF.
+    O PDF é resolvido pelas funções criarEspelhosDeTextoParaPrint/prepararPDF.
+  */
+  requestAnimationFrame(() => {
+    document.querySelectorAll('textarea').forEach(ta => {
+      ta.style.overflow = 'hidden';
+      ta.style.resize = 'none';
+      ta.style.height = 'auto';
+      ta.style.height = (ta.scrollHeight + 8) + 'px';
+    });
   });
 }
-
-/*
-   FUNÇÃO: expandirTodosParaPDF()
-   - Antes de imprimir, abre todos os ambientes fechados.
-   - Assim nenhuma seção fica escondida no PDF.
-*/
-function expandirTodosParaPDF() {
-  if (typeof expandAll === 'function') {
-    expandAll();
-  } else {
-    document.querySelectorAll('.amb-card.closed').forEach(card => card.classList.remove('closed'));
-  }
-}
-
-/*
-   FUNÇÃO: criarEspelhosDeTextoParaPrint()
-   - Esta é a correção principal.
-   - O PDF não imprime bem textarea; ele mostra scrollbar.
-   - Então criamos uma div logo abaixo de cada textarea com o mesmo texto.
-   - No @media print, o textarea some e a div aparece.
-*/
-function criarEspelhosDeTextoParaPrint() {
-  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
-
-  document.querySelectorAll('textarea').forEach(ta => {
-    const mirror = document.createElement('div');
-    mirror.className = 'print-textarea-mirror';
-    mirror.textContent = ta.value || ta.textContent || '';
-
-    ta.classList.add('print-hidden');
-    ta.insertAdjacentElement('afterend', mirror);
-  });
-}
-
-/*
-   FUNÇÃO: limparEspelhosDeTextoParaPrint()
-   - Depois de imprimir/salvar PDF, remove as cópias de texto.
-   - O sistema volta ao normal para edição.
-*/
-function limparEspelhosDeTextoParaPrint() {
-  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
-  document.querySelectorAll('textarea.print-hidden').forEach(ta => ta.classList.remove('print-hidden'));
-}
-
-/*
-   FUNÇÃO: prepararPDF()
-   - Esta função substitui o window.print() direto.
-   - Ela prepara o relatório antes de abrir a janela de impressão.
-*/
-function prepararPDF() {
-  expandirTodosParaPDF();
-  autoExpandTextareas();
-  criarEspelhosDeTextoParaPrint();
-
-  setTimeout(() => {
-    autoExpandTextareas();
-    window.print();
-  }, 300);
-}
-
-/*
-   Eventos automáticos:
-   - beforeprint: garante preparação mesmo se o usuário usar Ctrl+P.
-   - afterprint: limpa as cópias criadas para o PDF.
-   - input: ajusta a altura do textarea enquanto você digita.
-*/
-window.addEventListener('beforeprint', () => {
-  expandirTodosParaPDF();
-  autoExpandTextareas();
-  criarEspelhosDeTextoParaPrint();
-});
-
-window.addEventListener('afterprint', limparEspelhosDeTextoParaPrint);
-
-document.addEventListener('input', e => {
-  if (e.target && e.target.matches('textarea')) {
-    autoExpandTextareas();
-  }
-});
 
 function setViewMode() {
   editMode = false;
@@ -1601,62 +1458,7 @@ function exportReport() {
   });
 
   // Serializar para JSON embutido no HTML exportado
-  const stateJSON = JSON.stringify(state).replace(/
-
-// ══════════════════════════════════════════════
-// [AJUSTE PDF — BLOCO 03 — HTML EXPORTADO]
-// Local aproximado: dentro da função buildExportHTML, perto da linha 1800.
-// Repete as mesmas funções no arquivo exportado, para o PDF funcionar fora do app principal.
-// ══════════════════════════════════════════════
-function autoExpandTextareas() {
-  document.querySelectorAll('textarea').forEach(ta => {
-    ta.style.overflow = 'hidden';
-    ta.style.resize = 'none';
-    ta.style.height = 'auto';
-    ta.style.height = (ta.scrollHeight + 8) + 'px';
-  });
-}
-
-function expandirTodosParaPDF() {
-  document.querySelectorAll('.amb-card.closed').forEach(card => card.classList.remove('closed'));
-}
-
-function criarEspelhosDeTextoParaPrint() {
-  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
-
-  document.querySelectorAll('textarea').forEach(ta => {
-    const mirror = document.createElement('div');
-    mirror.className = 'print-textarea-mirror';
-    mirror.textContent = ta.value || ta.textContent || '';
-    ta.classList.add('print-hidden');
-    ta.insertAdjacentElement('afterend', mirror);
-  });
-}
-
-function limparEspelhosDeTextoParaPrint() {
-  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
-  document.querySelectorAll('textarea.print-hidden').forEach(ta => ta.classList.remove('print-hidden'));
-}
-
-function prepararPDF() {
-  expandirTodosParaPDF();
-  autoExpandTextareas();
-  criarEspelhosDeTextoParaPrint();
-
-  setTimeout(() => {
-    autoExpandTextareas();
-    window.print();
-  }, 300);
-}
-
-window.addEventListener('load', autoExpandTextareas);
-window.addEventListener('beforeprint', () => {
-  expandirTodosParaPDF();
-  autoExpandTextareas();
-  criarEspelhosDeTextoParaPrint();
-});
-window.addEventListener('afterprint', limparEspelhosDeTextoParaPrint);
-<\/script>/gi, '<\\/script>');
+  const stateJSON = JSON.stringify(state).replace(/<\/script>/gi, '<\\/script>');
 
   // Construir o HTML exportado como página standalone (view-only)
   const exportedHTML = buildExportHTML(stateJSON);
@@ -1880,10 +1682,136 @@ _AMBIENTES_EXPORT.forEach(amb => {
 });
 document.getElementById('resumo-export').innerHTML = resumoHTML ||
   '<tr><td class="resumo-empty" colspan="3">Nenhum item classificado.</td></tr>';
+
+// FUNÇÕES DO PDF DO HTML EXPORTADO
+// Mesma lógica do app principal: textarea vira div temporária na hora da impressão.
+function autoExpandTextareas() {
+  document.querySelectorAll('textarea').forEach(ta => {
+    ta.style.overflow = 'hidden';
+    ta.style.resize = 'none';
+    ta.style.height = 'auto';
+    ta.style.height = (ta.scrollHeight + 8) + 'px';
+  });
+}
+
+function criarEspelhosDeTextoParaPrint() {
+  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
+  document.querySelectorAll('textarea').forEach(ta => {
+    const mirror = document.createElement('div');
+    mirror.className = 'print-textarea-mirror';
+    if (ta.classList.contains('foto-intervencao')) mirror.classList.add('print-intervencao');
+    if (ta.classList.contains('sintese-box')) mirror.classList.add('print-sintese');
+    mirror.textContent = ta.value || ta.textContent || '';
+    ta.classList.add('print-hidden');
+    ta.insertAdjacentElement('afterend', mirror);
+  });
+}
+
+function limparEspelhosDeTextoParaPrint() {
+  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
+  document.querySelectorAll('textarea.print-hidden').forEach(ta => ta.classList.remove('print-hidden'));
+}
+
+function prepararPDF() {
+  document.querySelectorAll('.amb-card.closed').forEach(card => card.classList.remove('closed'));
+  autoExpandTextareas();
+  criarEspelhosDeTextoParaPrint();
+  setTimeout(() => window.print(), 300);
+}
+
+window.addEventListener('load', autoExpandTextareas);
+window.addEventListener('beforeprint', () => {
+  document.querySelectorAll('.amb-card.closed').forEach(card => card.classList.remove('closed'));
+  autoExpandTextareas();
+  criarEspelhosDeTextoParaPrint();
+});
+window.addEventListener('afterprint', limparEspelhosDeTextoParaPrint);
+
 <\/script>
 </body>
 </html>`;
 }
+
+
+
+/* ════════════════════════════════════════════
+   FUNÇÕES DO PDF — CORREÇÃO DO SCROLL DOS TEXTOS
+   LOCALIZAÇÃO APROX.: ANTES DO BLOCO FIREBASE
+
+   Ideia simples:
+   - O app usa textarea para editar textos.
+   - O navegador imprime textarea com barra de rolagem.
+   - Antes de imprimir, criamos uma <div> igual ao texto.
+   - Na impressão, escondemos o textarea e mostramos a <div>.
+════════════════════════════════════════════ */
+function criarEspelhosDeTextoParaPrint() {
+  /*
+    FUNÇÃO: criarEspelhosDeTextoParaPrint
+    O que faz:
+    1. Apaga espelhos antigos, se existirem.
+    2. Percorre todos os <textarea> do relatório.
+    3. Cria uma <div> com o mesmo texto.
+    4. Marca o textarea para ser escondido no PDF.
+
+    Resultado: no PDF aparece texto normal, sem barra de rolagem.
+  */
+  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
+
+  document.querySelectorAll('textarea').forEach(ta => {
+    const mirror = document.createElement('div');
+    mirror.className = 'print-textarea-mirror';
+
+    if (ta.classList.contains('foto-intervencao')) mirror.classList.add('print-intervencao');
+    if (ta.classList.contains('sintese-box')) mirror.classList.add('print-sintese');
+
+    mirror.textContent = ta.value || ta.textContent || '';
+
+    ta.classList.add('print-hidden');
+    ta.insertAdjacentElement('afterend', mirror);
+  });
+}
+
+function limparEspelhosDeTextoParaPrint() {
+  /*
+    FUNÇÃO: limparEspelhosDeTextoParaPrint
+    O que faz: depois que o PDF/print termina, remove as divs temporárias
+    e devolve os textareas ao estado normal do app.
+  */
+  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
+  document.querySelectorAll('textarea.print-hidden').forEach(ta => {
+    ta.classList.remove('print-hidden');
+  });
+}
+
+function prepararPDF() {
+  /*
+    FUNÇÃO: prepararPDF
+    O que faz quando você clica no botão PDF:
+    1. Expande todos os ambientes.
+    2. Ajusta a altura dos campos de texto na tela.
+    3. Cria os espelhos de texto para impressão.
+    4. Chama o print/PDF do navegador.
+  */
+  expandAll();
+  autoExpandTextareas();
+  criarEspelhosDeTextoParaPrint();
+
+  setTimeout(() => {
+    window.print();
+  }, 300);
+}
+
+window.addEventListener('beforeprint', () => {
+  /*
+    Segurança extra: alguns navegadores chamam a impressão por atalho
+    Ctrl+P. Assim, mesmo sem clicar no botão, o PDF é preparado.
+  */
+  expandAll();
+  autoExpandTextareas();
+  criarEspelhosDeTextoParaPrint();
+});
+
+window.addEventListener('afterprint', limparEspelhosDeTextoParaPrint);
 
 /* ════════════════════════════════════════════
    FIREBASE — INICIALIZAÇÃO
@@ -2122,6 +2050,18 @@ setViewMode = function() {
   _origSetViewMode();
   document.getElementById('btn-save').style.display = 'none';
 };
+
+
+
+/* Ajusta a altura dos textareas enquanto você digita. */
+document.addEventListener('input', function(e) {
+  if (e.target.matches('textarea')) {
+    e.target.style.overflow = 'hidden';
+    e.target.style.resize = 'none';
+    e.target.style.height = 'auto';
+    e.target.style.height = (e.target.scrollHeight + 8) + 'px';
+  }
+});
 
 /* ─── INIT ─── */
 renderAmbientes();
