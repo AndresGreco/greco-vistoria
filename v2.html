@@ -7,11 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;800&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
-<!-- Firebase SDKs (somente Firestore, sem Storage) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
-/* MAPA RÁPIDO: CSS geral começa aqui; ajuste do PDF sem scroll perto da linha ~620; JavaScript no fim do arquivo. */
 /* ══════════════════════════════════════════════
    GRECO ARQUITETURA — VISTORIA APP
    Variáveis da Marca
@@ -431,7 +427,7 @@ body { font-family: var(--body); background: var(--bg); color: var(--ink); font-
   .item-dot { background: #000; color: #fff; }
   .item-txt { color: #333; }
 
-  .crit-sel { border: 1px solid #bbb; background: #fff; }
+  .crit-sel { border: 1px solid #bbb; background: #fff; pointer-events: none; }
   .crit-sel.vc { background: #fee; color: #c00; border-color: #c00; }
   .crit-sel.vm { background: #ffa; color: #840; border-color: #840; }
   .crit-sel.ve { background: #eff; color: #069; border-color: #069; }
@@ -441,18 +437,37 @@ body { font-family: var(--body); background: var(--bg); color: var(--ink); font-
   .add-item-btn { display: none !important; }
   .item-del-btn { display: none !important; }
   .no-print { display: none !important; }
+
   .foto-card { background: #fff; border: 1px solid #ccc; page-break-inside: avoid; }
   .foto-card-top { background: #f4f4f4; }
   .foto-card-num { color: #333; }
   .foto-card-del { display: none !important; }
   .foto-titulo { color: #000; border-bottom-color: #ccc; }
-  .foto-leg { border-color: #ccc; color: #333; background: #fff; }
-  .foto-intervencao { border-color: #bbb; color: #333; background: #f9f9f2; }
-  .foto-field-lbl { color: #888; }
   .fotos-grid { gap: 12px; }
   .sintese-wrap { border-top-color: #ccc; }
   .sintese-label { color: #333; }
-  .sintese-box { border-color: #ccc; color: #333; background: #f9f9f2; }
+
+  /* ── TEXTAREA → DIV no print: sem scroll, altura total ── */
+  .print-div {
+    display: block !important;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #333;
+    background: #f9f9f2;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px 10px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: unset !important;
+    width: 100%;
+  }
+  .print-div.sintese { background: #f9f9f2; border-color: #ccc; }
+  .print-div.leg     { background: #fff;    border-color: #ccc; }
+  .print-div.interv  { background: #f9f9f2; border-color: #bbb; }
 
   .resumo-wrap { border-color: #ccc; background: #fff; }
   .resumo-table th { background: #000; color: #fff; }
@@ -629,39 +644,16 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
 }
 
 
-/* ═════════════════════════════════════════════════════════════
-   AJUSTE PDF SEM SCROLL — LINHA ~620
-   O navegador imprime <textarea> como campo de formulário e mantém
-   barra de rolagem. Este bloco cria um "espelho" visual em texto comum
-   somente na impressão. Na tela normal, nada muda.
-═════════════════════════════════════════════════════════════ */
-.print-textarea-mirror { display: none; }
 
 @media print {
-  textarea.print-hidden { display: none !important; }
-
-  .print-textarea-mirror {
-    display: block !important;
-    width: 100%;
-    white-space: pre-wrap;
+  textarea,
+  .foto-leg,
+  .foto-intervencao,
+  .sintese-box {
     overflow: visible !important;
+    resize: none !important;
     height: auto !important;
     min-height: unset !important;
-    max-height: none !important;
-    border: 1px solid #d7d7d7;
-    border-radius: 6px;
-    padding: 8px 10px;
-    font-family: var(--body);
-    font-size: 12px;
-    line-height: 1.5;
-    color: #333;
-    background: #fff;
-    box-sizing: border-box;
-  }
-
-  .foto-intervencao + .print-textarea-mirror,
-  .sintese-box + .print-textarea-mirror {
-    background: #f9f9f2;
   }
 
   .foto-card,
@@ -673,860 +665,6 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
 }
 
 </style>
-</head>
-<body>
-
-<!-- ══════════════ TOPBAR ══════════════ -->
-<div id="topbar">
-  <div class="logo">GRECO <span>ARQUITETURA</span></div>
-  <span id="mode-badge" class="view">Visualização</span>
-  <button class="tbtn" id="btn-expand" onclick="expandAll()">↓ Expandir</button>
-  <button class="tbtn" id="btn-collapse" onclick="collapseAll()">↑ Recolher</button>
-  <button class="tbtn" id="btn-resumo" onclick="generateSummary()">⟳ Resumo</button>
-  <button class="tbtn" id="btn-save"   style="display:none" onclick="saveToCloud()">☁️ Salvar</button>
-  <button class="tbtn" id="btn-export" style="display:none" onclick="exportReport()">💾 Exportar</button>
-  <button class="tbtn accent" onclick="prepararPDF()">🖨 PDF</button>
-  <button class="tbtn" id="btn-lock" onclick="toggleAuth()" title="Acesso editor">🔒</button>
-</div>
-
-<!-- MODAL LINK COMPARTILHÁVEL -->
-<div id="shareModal">
-  <div class="share-box">
-    <h3>✅ Relatório salvo!</h3>
-    <p>Envie este link para o cliente — ele abre no navegador com tudo incluído.</p>
-    <div class="share-link-row">
-      <input type="text" id="shareLinkInput" readonly>
-      <button class="share-copy-btn" onclick="copyShareLink()">Copiar</button>
-    </div>
-    <span class="share-close" onclick="document.getElementById('shareModal').classList.remove('open')">Fechar</span>
-  </div>
-</div>
-
-<!-- TOAST -->
-<div id="toast"></div>
-
-<!-- LIGHTBOX -->
-<div id="lightbox" onclick="closeLightbox()">
-  <button id="lightbox-close" onclick="closeLightbox()">✕</button>
-  <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()">
-</div>
-
-<!-- MODAL DE SENHA -->
-<div id="authModal">
-  <div class="auth-box">
-    <h3>Modo Editor</h3>
-    <p>Digite a senha para habilitar a edição do relatório</p>
-    <input class="auth-input" type="password" id="authInput" placeholder="••••••••"
-      onkeydown="if(event.key==='Enter') doAuth()">
-    <button class="auth-submit" onclick="doAuth()">Entrar</button>
-    <span class="auth-error" id="authError">Senha incorreta. Tente novamente.</span>
-    <span class="auth-cancel" onclick="closeAuth()">Cancelar — continuar em visualização</span>
-  </div>
-</div>
-
-<!-- ══════════════ RELATÓRIO ══════════════ -->
-<div id="report">
-
-  <!-- CAPA -->
-  <div class="cover">
-    <div class="cover-tag">Relatório Técnico · Locação</div>
-    <h1>Vistoria de <span>Imóvel</span><br>para Locação</h1>
-    <div class="ficha">
-      <div class="ficha-cell"><label>Cliente</label><input id="fc" type="text" value="João André" placeholder="Nome do cliente"></div>
-      <div class="ficha-cell"><label>Empreendimento</label><input id="fe" type="text" value="Edifício Villa Reale" placeholder="Empreendimento"></div>
-      <div class="ficha-cell"><label>Localização</label><input id="fl" type="text" value="Nova Lima – MG" placeholder="Cidade / UF"></div>
-      <div class="ficha-cell"><label>Data da Vistoria</label><input id="fd" type="text" value="02/06/2026" placeholder="DD/MM/AAAA"></div>
-    </div>
-  </div>
-
-  <!-- SUMÁRIO -->
-  <nav class="toc section">
-    <div class="toc-label">Sumário</div>
-    <ol>
-      <li onclick="goTo('#s1')">Objetivo do Relatório</li>
-      <li onclick="goTo('#s2')">Metodologia da Vistoria</li>
-      <li onclick="goTo('#s3')">Critérios de Classificação das Intervenções</li>
-      <li onclick="goTo('#s4')">Levantamento Técnico por Ambiente</li>
-      <li onclick="goTo('#s5')">Registro Fotográfico</li>
-      <li onclick="goTo('#s6')">Quadro Resumo das Intervenções</li>
-      <li onclick="goTo('#s7')">Considerações Técnicas Finais</li>
-    </ol>
-  </nav>
-
-  <!-- 1. OBJETIVO -->
-  <div class="section" id="s1">
-    <div class="sec-header"><span class="sec-num">01</span><h2 class="sec-title">Objetivo do <span>Relatório</span></h2></div>
-    <p class="sec-text" contenteditable="true">O presente relatório tem como objetivo apresentar o levantamento técnico visual das condições aparentes do imóvel vistoriado, identificando manifestações patológicas, falhas funcionais, desgastes naturais, avarias construtivas, itens de manutenção corretiva e adequações recomendadas, visando a preparação do imóvel para futura locação.</p>
-    <p class="sec-text" contenteditable="true">A vistoria foi realizada de forma predominantemente visual, considerando os aspectos arquitetônicos, construtivos, elétricos, hidráulicos, de marcenaria, revestimentos, esquadrias, iluminação e equipamentos aparentes, sem a realização de ensaios destrutivos ou testes invasivos.</p>
-  </div>
-
-  <!-- 2. METODOLOGIA -->
-  <div class="section" id="s2">
-    <div class="sec-header"><span class="sec-num">02</span><h2 class="sec-title">Metodologia da <span>Vistoria</span></h2></div>
-    <p class="sec-text">A inspeção técnica foi conduzida através de levantamento visual dos ambientes internos e externos do imóvel, considerando:</p>
-    <ul class="meto-list">
-      <li>Integridade dos acabamentos;</li>
-      <li>Condições aparentes das instalações elétricas e hidráulicas;</li>
-      <li>Estado de conservação dos revestimentos;</li>
-      <li>Condições de marcenaria fixa;</li>
-      <li>Avaliação visual de esquadrias, ferragens e vidros;</li>
-      <li>Verificação de sinais aparentes de infiltração, umidade e patologias construtivas;</li>
-      <li>Estado geral dos elementos de mobiliário fixo e áreas de lazer.</li>
-    </ul>
-    <p class="sec-text" contenteditable="true">As observações aqui descritas poderão demandar inspeções complementares específicas para confirmação de causas, patologias ocultas ou condições técnicas não visíveis durante a vistoria.</p>
-  </div>
-
-  <!-- 3. CRITÉRIOS -->
-  <div class="section" id="s3">
-    <div class="sec-header"><span class="sec-num">03</span><h2 class="sec-title">Critérios de <span>Classificação</span></h2></div>
-    <div class="crit-grid">
-      <div class="crit-card cc"><div class="crit-tipo">Crítico</div><p>Itens relacionados à segurança, funcionalidade, infiltrações, elétrica, estanqueidade ou risco de agravamento patológico.</p></div>
-      <div class="crit-card cm"><div class="crit-tipo">Moderado</div><p>Itens de manutenção corretiva e preventiva que afetam desempenho, conservação e funcionalidade do imóvel.</p></div>
-      <div class="crit-card ce"><div class="crit-tipo">Estético</div><p>Itens de acabamento, desgaste visual e atualização estética sem comprometimento funcional imediato.</p></div>
-    </div>
-  </div>
-
-  <!-- 4. LEVANTAMENTO -->
-  <div class="section" id="s4">
-    <div class="sec-header"><span class="sec-num">04</span><h2 class="sec-title">Levantamento Técnico por <span>Ambiente</span></h2></div>
-    <div id="ambientes-root"></div>
-  </div>
-
-  <!-- 5. REGISTRO FOTOGRÁFICO -->
-  <div class="section" id="s5">
-    <div class="sec-header"><span class="sec-num">05</span><h2 class="sec-title">Registro <span>Fotográfico</span></h2></div>
-    <p class="sec-text">O registro fotográfico está distribuído em cada ambiente na seção 4, com legenda técnica por imagem. Abaixo o índice de fotos inseridas por ambiente.</p>
-    <div id="foto-index"></div>
-  </div>
-
-  <!-- 6. QUADRO RESUMO -->
-  <div class="section" id="s6">
-    <div class="sec-header"><span class="sec-num">06</span><h2 class="sec-title">Quadro Resumo das <span>Intervenções</span></h2></div>
-    <div class="resumo-wrap">
-      <table class="resumo-table">
-        <thead><tr><th>Ambiente</th><th>Intervenção Técnica</th><th>Criticidade</th></tr></thead>
-        <tbody id="resumo-body"><tr><td class="resumo-empty" colspan="3">Clique em "⟳ Resumo" para gerar automaticamente com base nas classificações marcadas na seção 4.</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- 7. CONSIDERAÇÕES FINAIS -->
-  <div class="section" id="s7">
-    <div class="sec-header"><span class="sec-num">07</span><h2 class="sec-title">Considerações <span>Técnicas Finais</span></h2></div>
-    <p class="sec-text" contenteditable="true">Com base na vistoria realizada, observou-se que o imóvel apresenta condições gerais compatíveis com ocupação, porém demandando intervenções corretivas, preventivas e estéticas previamente à disponibilização para locação.</p>
-    <p class="sec-text" contenteditable="true">Os serviços recomendados concentram-se majoritariamente em adequações de acabamento, revisões de sistemas aparentes, recomposição de marcenaria, tratamento de patologias localizadas e manutenção geral dos ambientes.</p>
-    <p class="sec-text" contenteditable="true">Recomenda-se a execução das intervenções priorizando os itens classificados como críticos, seguidos dos itens moderados e estéticos, visando garantir adequado desempenho, valorização patrimonial e melhores condições de uso ao futuro locatário.</p>
-  </div>
-
-  <!-- FOOTER -->
-  <div class="rep-footer">
-    <div class="rep-footer-empresa">GRECO <span>ARQUITETURA</span></div>
-    <div class="rep-footer-slogan">Projetos e Acompanhamento Técnico de Obras</div>
-  </div>
-</div>
-
-<!-- ══════════════ JAVASCRIPT ══════════════ -->
-<script>
-/* ══════════════════════════════════════════════
-   DADOS INICIAIS DOS AMBIENTES
-   itens: { id, texto, crit }  — crit pode vir pré-definido
-══════════════════════════════════════════════ */
-function mkItem(texto, crit) {
-  return { id: 'i' + Math.random().toString(36).slice(2), texto, crit: crit || '' };
-}
-
-const AMBIENTES = [
-  { id:'a01', num:'4.1',  nome:'Varanda Gourmet', itens:[
-    mkItem('Falhas de acabamento entre marcenaria e esquadrias', 'moderado'),
-    mkItem('Espaçamentos excessivos entre módulos de marcenaria', 'moderado'),
-    mkItem('Desalinhamento entre painéis da marcenaria planejada', 'estetico'),
-    mkItem('Recortes irregulares e acabamento incompleto em painéis de marcenaria', 'estetico'),
-    mkItem('Parafusos aparentes e ausência de tapa-furos em marcenaria', 'estetico'),
-    mkItem('Fiação elétrica aparente e instalações expostas', 'critico'),
-    mkItem('Tomadas sem fixação adequada / espelhos pendentes', 'critico'),
-    mkItem('Ausência de espelhos, tampas cegas e acabamentos elétricos definitivos', 'moderado'),
-    mkItem('Necessidade de ocultação técnica de cabeamentos aparentes', 'moderado'),
-    mkItem('Peças de marcenaria com sinais de estufamento e deterioração por umidade', 'moderado'),
-    mkItem('Desgaste e manchas em peitoris e revestimentos amadeirados', 'estetico'),
-    mkItem('Falhas de arremate e vedação entre materiais distintos', 'moderado'),
-    mkItem('Granito com avarias, lascamentos e peças comprometidas', 'moderado'),
-    mkItem('Necessidade de recuperação (lixamento) ou substituição de elementos pétreos danificados', 'moderado'),
-    mkItem('Piso de madeira com fissuras, deformações e abertura entre réguas', 'moderado'),
-    mkItem('Piso de madeira com peças estouradas/comprometidas, necessitando substituição localizada', 'moderado'),
-    mkItem('Falhas de acabamento junto aos encontros entre piso, marcenaria e revestimentos', 'estetico'),
-    mkItem('Instalações técnicas sob bancada sem acabamento definitivo', 'estetico'),
-  ]},
-  { id:'a02', num:'4.2',  nome:'Área da Piscina', itens:[
-    mkItem('Degradação e desalinhamento do deck de madeira — desgaste, esbranquiçamento, empenamento e furos aparentes', 'moderado'),
-    mkItem('Falhas de acabamento e fixação no deck — parafusos/furos aparentes e desalinhamentos pontuais entre peças', 'moderado'),
-    mkItem('Revestimento pétreo solto, ausente e desalinhado na parede da piscina', 'moderado'),
-    mkItem('Piso pétreo quebrado e deteriorado no entorno da piscina — peças quebradas, trincadas, destacadas e áreas sem revestimento', 'critico'),
-    mkItem('Sujidade, desgaste e deterioração do rejuntamento no entorno da piscina', 'moderado'),
-    mkItem('Presença de vegetação espontânea e acúmulo de resíduos em trilhos e drenos', 'moderado'),
-    mkItem('Corrosão e deterioração do equipamento de aquecimento/apoio da piscina — componentes metálicos oxidados e conexões degradadas', 'critico'),
-  ]},
-  { id:'a03', num:'4.3',  nome:'Varanda Lat. Direita', itens:[
-    mkItem('Acúmulo de detritos e vegetação em trilhos, canaletas e drenagem das esquadrias', 'moderado'),
-    mkItem('Falhas de acabamento e desalinhamento em luminárias embutidas junto ao revestimento pétreo', 'moderado'),
-    mkItem('Desgaste e deterioração do mobiliário externo em madeira — desbotamento, manchas e degradação por intempéries', 'moderado'),
-    mkItem('Presença de vegetação espontânea junto às esquadrias e juntas do piso — retenção de umidade', 'moderado'),
-    mkItem('Indícios de umidade em forro/rebaixo junto à esquadria — possível infiltração ou falha de vedação', 'critico'),
-    mkItem('Desgaste superficial em perfis de esquadrias de alumínio — riscos e perda pontual do acabamento', 'estetico'),
-    mkItem('Manchas e deformações em cortinas blackout — escorrimentos e ondulações excessivas', 'estetico'),
-    mkItem('Falhas de acabamento entre marcenaria, revestimentos e esquadrias — arremates irregulares', 'moderado'),
-    mkItem('Oxidação em grelha de ralo e deterioração do acabamento periférico', 'moderado'),
-    mkItem('Deterioração localizada de painel amadeirado por umidade junto à esquadria', 'critico'),
-  ]},
-  { id:'a04', num:'4.4',  nome:'Sala de Estar', itens:[
-    mkItem('Desgaste acentuado do piso amadeirado — perda de proteção, manchas e possível ação de umidade junto às esquadrias', 'critico'),
-    mkItem('Aberturas e movimentação entre réguas do piso amadeirado', 'moderado'),
-    mkItem('Ponto de drenagem sem acabamento adequado — acúmulo de sujeira e exposição de eletroduto', 'moderado'),
-    mkItem('Desgaste em difusor/grade embutida — riscos e avarias no acabamento periférico', 'estetico'),
-    mkItem('Marcações em tinta e avarias no piso amadeirado', 'moderado'),
-    mkItem('Folga e desalinhamento em mesa lateral — instabilidade no sistema de fixação', 'estetico'),
-    mkItem('Manchas superficiais em mobiliário estofado', 'estetico'),
-    mkItem('Falhas no perfil de transição entre mármore e piso amadeirado — deterioração do acabamento metálico', 'moderado'),
-    mkItem('Cortinas com acúmulo severo de sujeira, manchas e deformações', 'moderado'),
-    mkItem('Obstrução e sujeira em trilhos de esquadria — possível bloqueio da drenagem', 'critico'),
-    mkItem('Falhas de acabamento no cortineiro — frestas e arremates irregulares entre marcenaria, parede e cortina', 'moderado'),
-    mkItem('Fissuração capilar sobre esquadrias — possível movimentação diferencial entre materiais', 'estetico'),
-    mkItem('Falhas de arremate entre elementos construtivos — frestas aparentes nos encontros', 'moderado'),
-  ]},
-  { id:'a05', num:'4.5',  nome:'Cozinha', itens:[
-    mkItem('Substituição e padronização das torneiras'),
-    mkItem('Revisão de ferragens da marcenaria, incluindo dobradiças e trilhos telescópicos'),
-    mkItem('Adequação do nicho para embutimento de micro-ondas'),
-    mkItem('Revisão do sistema elétrico terminal'),
-    mkItem('Verificação funcional dos eletrodomésticos'),
-    mkItem('Revisão hidráulica de pontos de pia e drenagem'),
-    mkItem('Instalação de equipamento lava-louças'),
-  ]},
-  { id:'a06', num:'4.6',  nome:'Sala de TV', itens:[
-    mkItem('Investigação de infiltração associada à esquadria'),
-    mkItem('Substituição do revestimento decorativo de parede'),
-    mkItem('Adequação do mobiliário do painel/rack'),
-    mkItem('Revisão dos equipamentos de sonorização'),
-    mkItem('Verificação funcional da tela de projeção'),
-    mkItem('Recomposição de acabamento sob escada'),
-    mkItem('Revisão elétrica geral'),
-    mkItem('Higienização e impermeabilização do mobiliário estofado'),
-  ]},
-  { id:'a13', num:'4.7',  nome:'Sala de Jantar', itens:[
-    mkItem('Substituição do revestimento de parede (papel de parede/revestimento decorativo)'),
-    mkItem('Substituição ou adequação do mobiliário de apoio do aquário'),
-    mkItem('Recuperação e repintura do teto'),
-    mkItem('Revisão do sistema de áudio embutido'),
-    mkItem('Investigação de sinais de umidade próximos ao aquário'),
-    mkItem('Verificação e recuperação das juntas de movimentação do forro de gesso'),
-  ]},
-  { id:'a07', num:'4.8',  nome:'Lavabo', itens:[
-    mkItem('Substituição de elementos sanitários danificados (cuba/vidro)'),
-    mkItem('Revisão dos sistemas de drenagem'),
-    mkItem('Revisão do sistema hidráulico aparente'),
-    mkItem('Substituição de luminárias'),
-    mkItem('Fixação e regularização da ducha higiênica'),
-  ]},
-  { id:'a09', num:'4.9',  nome:'Suíte 01', itens:[
-    mkItem('Revisão elétrica geral'),
-    mkItem('Verificação técnica do shaft'),
-    mkItem('Recuperação superficial e repintura do banheiro'),
-    mkItem('Limpeza técnica pós-obra de revestimentos'),
-    mkItem('Revisão de trilhos da marcenaria'),
-    mkItem('Investigação de infiltrações em armários'),
-    mkItem('Substituição de vidro danificado'),
-  ]},
-  { id:'a10', num:'4.10', nome:'Suíte 02', itens:[
-    mkItem('Revisão de tomadas e interruptores'),
-    mkItem('Recuperação de mobiliário do banheiro'),
-    mkItem('Ajuste de ferragens'),
-    mkItem('Verificação técnica de vidros'),
-    mkItem('Limpeza técnica de box'),
-    mkItem('Regularização de acabamentos e furos aparentes'),
-  ]},
-  { id:'a12', num:'4.11', nome:'Área Gourmet — 2º Pavimento', itens:[
-    mkItem('Recuperação e recomposição de rejuntamentos'),
-    mkItem('Tratamento preventivo de infiltrações'),
-    mkItem('Recuperação de mobiliário em madeira'),
-    mkItem('Substituição de arandelas'),
-    mkItem('Revisão do sistema de sonorização'),
-    mkItem('Verificação funcional da sauna'),
-    mkItem('Revisão do sistema hidráulico/pressurização'),
-    mkItem('Substituição da marcenaria inferior da bancada'),
-  ]},
-  { id:'a11', num:'4.12', nome:'Suíte Master', itens:[
-    mkItem('Recuperação de elementos de marcenaria comprometidos'),
-    mkItem('Refixação de ferragens e puxadores'),
-    mkItem('Investigação de possíveis infiltrações no forro'),
-    mkItem('Substituição localizada de revestimentos decorativos'),
-    mkItem('Revisão do sistema elétrico'),
-    mkItem('Recuperação de elementos de drenagem'),
-    mkItem('Revisão de ferragens de portas e pivôs'),
-    mkItem('Recuperação do mobiliário do banheiro'),
-  ]},
-  { id:'a14', num:'4.13', nome:'Sala de Estar — 2º Pavimento', itens:[
-    mkItem('Levantamento de intervenções — aguardando vistoria'),
-  ]},
-  { id:'a08', num:'4.14', nome:'DCE — Lavanderia', itens:[
-    mkItem('Revisão do sistema elétrico terminal'),
-    mkItem('Regularização do quadro de distribuição elétrica (QDC)'),
-    mkItem('Recuperação ou substituição de marcenaria comprometida por umidade'),
-  ]},
-  { id:'a15', num:'4.15', nome:'Hall', itens:[
-    mkItem('Levantamento de intervenções — aguardando vistoria'),
-  ]},
-];
-
-/* ═══ SÍNTESE POR AMBIENTE ═══ */
-const SINTESE_DEFAULT = {
-  'a01': `De forma geral, a varanda gourmet apresenta inconformidades relacionadas a acabamentos incompletos, falhas de marcenaria, frestas excessivas, instalações elétricas aparentes, ausência de acabamentos definitivos em pontos elétricos, desgaste de revestimentos, avarias em elementos pétreos e comprometimento localizado do piso de madeira.\n\nRecomenda-se a realização de ajustes de marcenaria, instalação definitiva dos acabamentos elétricos (espelhos, tampas cegas e fixações), ocultação de cabeamentos aparentes, execução de tapa-furos e acabamento de parafusos aparentes, substituição de peças de madeira comprometidas por estufamento ou fissuração, bem como recuperação ou substituição dos elementos pétreos danificados, visando compatibilizar o ambiente com o padrão estético, funcional e construtivo esperado.`,
-
-  'a02': `O ambiente da piscina apresenta inconformidades predominantemente relacionadas à deterioração do deck de madeira, comprometimento do revestimento pétreo do entorno, falhas no revestimento vertical e sinais de desgaste dos componentes de apoio do sistema da piscina.\n\nDestacam-se como itens prioritários a substituição dos pisos quebrados do entorno da piscina e a avaliação do equipamento oxidado, por apresentarem potencial risco funcional e de segurança. Observa-se ainda necessidade de manutenção corretiva e estética do deck de madeira e recomposição localizada dos revestimentos pétreos.`,
-
-  'a03': `O ambiente da varanda lateral direita apresenta inconformidades relacionadas principalmente à ausência de manutenção preventiva das esquadrias e seus elementos periféricos, com acúmulo de vegetação e resíduos em trilhos e canaletas, falhas de acabamento em luminárias e deterioração do mobiliário externo.\n\nDestacam-se como itens prioritários os indícios de umidade no forro junto à esquadria e a deterioração localizada do painel amadeirado, que indicam possível falha de vedação com risco de agravamento. Recomenda-se investigação técnica da origem da umidade antes da execução dos demais serviços de acabamento.`,
-
-  'a04': `A sala de estar apresenta inconformidades concentradas no piso amadeirado, com desgaste acentuado do acabamento superficial, aberturas entre réguas e marcações aparentes. Destacam-se também o acúmulo severo de sujeira nas cortinas, a obstrução de trilhos de esquadria e fissuração capilar sobre esquadrias como itens que demandam atenção.\n\nRecomenda-se priorizar a recuperação do piso, limpeza técnica dos elementos têxteis, desobstrução dos trilhos e investigação das fissuras observadas, visando o restabelecimento do padrão estético e funcional do ambiente.`,
-};
-
-/* ═══ ESTADO MUTÁVEL ═══ */
-// itensState[ambId] = [{id, texto, crit}]  — cópia mutável dos AMBIENTES
-const itensState   = {};
-const fotosState   = {};
-const sinteseState = {};
-let globalCounter  = 0;
-
-AMBIENTES.forEach(a => {
-  itensState[a.id]   = a.itens.map(it => ({ ...it }));  // cópia mutável
-  fotosState[a.id]   = [];
-  sinteseState[a.id] = SINTESE_DEFAULT[a.id] || '';
-});
-
-/* ═══ RENDER AMBIENTES ═══ */
-function renderAmbientes() {
-  const root = document.getElementById('ambientes-root');
-  root.innerHTML = '';
-  AMBIENTES.forEach(amb => {
-    const wrap = document.createElement('div');
-    wrap.className = 'amb-wrap';
-
-    const card = document.createElement('div');
-    card.className = 'amb-card closed';
-    card.id = 'card-' + amb.id;
-
-    const hdr = document.createElement('div');
-    hdr.className = 'amb-hdr';
-    hdr.innerHTML = `<span class="amb-num">${amb.num}</span><span class="amb-name">${amb.nome}</span><span class="amb-chevron">▾</span>`;
-    hdr.addEventListener('click', () => toggleAmb(amb.id));
-
-    const body = document.createElement('div');
-    body.className = 'amb-body';
-    body.id = 'body-' + amb.id;
-
-    const ul = document.createElement('ul');
-    ul.className = 'itens-list';
-    ul.id = 'ul-' + amb.id;
-
-    renderItens(amb.id, ul);
-
-    // Botão "+ Adicionar item"
-    const addItemBtn = document.createElement('button');
-    addItemBtn.className = 'add-item-btn no-print';
-    addItemBtn.textContent = '+ Adicionar item';
-    addItemBtn.addEventListener('click', () => adicionarItem(amb.id));
-
-    const fotoZone = buildFotoZone(amb);
-
-    body.append(ul, addItemBtn, fotoZone);
-    card.append(hdr, body);
-    wrap.appendChild(card);
-    root.appendChild(wrap);
-  });
-}
-
-/* ─── Renderizar lista de itens de um ambiente ─── */
-function renderItens(ambId, ulEl) {
-  const ul = ulEl || document.getElementById('ul-' + ambId);
-  if (!ul) return;
-  ul.innerHTML = '';
-  itensState[ambId].forEach((item, idx) => {
-    const li = document.createElement('li');
-    li.className = 'item-row';
-
-    // Número sequencial
-    const dot = document.createElement('div');
-    dot.className = 'item-dot';
-    dot.textContent = String(idx + 1).padStart(2, '0');
-
-    // Texto editável
-    const span = document.createElement('div');
-    span.className = 'item-txt';
-    span.contentEditable = 'true';
-    span.textContent = item.texto;
-    span.addEventListener('blur', e => { item.texto = e.target.textContent.trim(); });
-    span.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); span.blur(); } });
-
-    // Select criticidade
-    const sel = document.createElement('select');
-    sel.className = 'crit-sel' + (item.crit === 'critico' ? ' vc' : item.crit === 'moderado' ? ' vm' : item.crit === 'estetico' ? ' ve' : '');
-    sel.innerHTML = `
-      <option value="">— Classificar</option>
-      <option value="critico"${item.crit==='critico'?' selected':''}>Crítico</option>
-      <option value="moderado"${item.crit==='moderado'?' selected':''}>Moderado</option>
-      <option value="estetico"${item.crit==='estetico'?' selected':''}>Estético</option>
-    `;
-    sel.addEventListener('change', () => {
-      item.crit = sel.value;
-      sel.className = 'crit-sel' + (sel.value === 'critico' ? ' vc' : sel.value === 'moderado' ? ' vm' : sel.value === 'estetico' ? ' ve' : '');
-    });
-
-    // Botão remover item
-    const del = document.createElement('button');
-    del.className = 'item-del-btn no-print';
-    del.title = 'Remover item';
-    del.textContent = '✕';
-    del.addEventListener('click', () => removerItem(ambId, item.id));
-
-    li.append(dot, span, sel, del);
-    ul.appendChild(li);
-  });
-}
-
-function adicionarItem(ambId) {
-  const novoItem = mkItem('Novo item — clique para editar');
-  itensState[ambId].push(novoItem);
-  renderItens(ambId);
-  // Focar no novo item
-  const ul = document.getElementById('ul-' + ambId);
-  const lastRow = ul.lastElementChild;
-  if (lastRow) {
-    const txt = lastRow.querySelector('.item-txt');
-    if (txt) { txt.focus(); document.execCommand('selectAll'); }
-  }
-}
-
-function removerItem(ambId, itemId) {
-  itensState[ambId] = itensState[ambId].filter(it => it.id !== itemId);
-  renderItens(ambId);
-}
-
-/* ─── ZONA DE FOTOS ─── */
-function buildFotoZone(amb) {
-  const zone = document.createElement('div');
-  zone.className = 'foto-zone';
-
-  const zoneHdr = document.createElement('div');
-  zoneHdr.className = 'foto-zone-hdr';
-
-  const lbl = document.createElement('span');
-  lbl.className = 'foto-zone-label';
-  lbl.textContent = 'Registro Fotográfico';
-
-  const addLabel = document.createElement('label');
-  addLabel.className = 'foto-add-btn';
-  addLabel.innerHTML = '+ Fotos';
-
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.className = 'foto-file-input';
-  fileInput.accept = 'image/*';
-  fileInput.multiple = true;
-  fileInput.addEventListener('change', e => handleFiles(e.target.files, amb.id));
-  addLabel.appendChild(fileInput);
-
-  zoneHdr.append(lbl, addLabel);
-
-  const drop = document.createElement('div');
-  drop.className = 'drop-zone';
-  drop.id = 'drop-' + amb.id;
-  drop.textContent = 'Clique ou arraste as fotos aqui';
-  drop.addEventListener('click', () => fileInput.click());
-  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag-over'); });
-  drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
-  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('drag-over'); handleFiles(e.dataTransfer.files, amb.id); });
-
-  const grid = document.createElement('div');
-  grid.className = 'fotos-grid';
-  grid.id = 'grid-' + amb.id;
-
-  // Síntese Técnica
-  const sinteseWrap = document.createElement('div');
-  sinteseWrap.className = 'sintese-wrap';
-  sinteseWrap.innerHTML = `<span class="sintese-label">Síntese Técnica — ${amb.nome}</span>`;
-  const sinteseBox = document.createElement('textarea');
-  sinteseBox.className = 'sintese-box';
-  sinteseBox.placeholder = 'Descreva a síntese das inconformidades observadas no ambiente e as recomendações gerais de intervenção…';
-  sinteseBox.value = sinteseState[amb.id] || '';
-  sinteseBox.addEventListener('input', e => { sinteseState[amb.id] = e.target.value; });
-  sinteseWrap.appendChild(sinteseBox);
-
-  zone.append(zoneHdr, drop, grid, sinteseWrap);
-  return zone;
-}
-
-/* ─── PROCESSAR ARQUIVOS ─── */
-function handleFiles(files, ambId) {
-  Array.from(files).forEach(file => {
-    if (!file.type.startsWith('image/')) return;
-    resizeAndLoad(file, src => addFoto(src, ambId));
-  });
-}
-
-function resizeAndLoad(file, cb) {
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = new Image();
-    img.onload = () => {
-      const MAX = 1400;
-      let w = img.width, h = img.height;
-      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      cb(canvas.toDataURL('image/jpeg', 0.82));
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-function addFoto(src, ambId) {
-  globalCounter++;
-  const id = 'foto-' + Date.now() + '-' + Math.random().toString(36).slice(2);
-  fotosState[ambId].push({ id, src, titulo: '', observacao: '', intervencao: '', globalNum: globalCounter });
-  renderFotos(ambId);
-  updateFotoIndex();
-  document.getElementById('drop-' + ambId).classList.add('hidden');
-}
-
-function removeFoto(ambId, fotoId) {
-  fotosState[ambId] = fotosState[ambId].filter(f => f.id !== fotoId);
-  renumberAll();
-  renderFotos(ambId);
-  updateFotoIndex();
-  if (fotosState[ambId].length === 0)
-    document.getElementById('drop-' + ambId).classList.remove('hidden');
-}
-
-function renumberAll() {
-  let c = 0;
-  AMBIENTES.forEach(amb => fotosState[amb.id].forEach(f => { c++; f.globalNum = c; }));
-  globalCounter = c;
-}
-
-function renderFotos(ambId) {
-  const grid = document.getElementById('grid-' + ambId);
-  if (!grid) return;
-  grid.innerHTML = '';
-  fotosState[ambId].forEach(foto => {
-    const num = String(foto.globalNum).padStart(2, '0');
-    const card = document.createElement('div');
-    card.className = 'foto-card';
-
-    const top = document.createElement('div');
-    top.className = 'foto-card-top';
-    top.innerHTML = `<span class="foto-card-num">FOTO ${num}</span>`;
-    const delBtn = document.createElement('button');
-    delBtn.className = 'foto-card-del';
-    delBtn.title = 'Remover foto';
-    delBtn.textContent = '✕';
-    delBtn.addEventListener('click', () => removeFoto(ambId, foto.id));
-    top.appendChild(delBtn);
-
-    const img = document.createElement('img');
-    img.src = foto.src;
-    img.alt = 'Foto ' + num;
-    img.loading = 'lazy';
-    img.style.cursor = 'zoom-in';
-    img.title = 'Clique para ampliar';
-    img.addEventListener('click', () => openLightbox(foto.src));
-
-    const foot = document.createElement('div');
-    foot.className = 'foto-card-foot';
-
-    // Título
-    const lblTit = document.createElement('label');
-    lblTit.className = 'foto-field-lbl';
-    lblTit.textContent = 'Título';
-    const inpTit = document.createElement('input');
-    inpTit.type = 'text';
-    inpTit.className = 'foto-titulo';
-    inpTit.placeholder = 'Ex: Peitoril da esquadria com desgaste no revestimento';
-    inpTit.value = foto.titulo;
-    inpTit.addEventListener('input', e => { foto.titulo = e.target.value; });
-
-    // Observação
-    const lblObs = document.createElement('label');
-    lblObs.className = 'foto-field-lbl';
-    lblObs.textContent = 'Observação técnica';
-    const taObs = document.createElement('textarea');
-    taObs.className = 'foto-leg';
-    taObs.placeholder = 'Descreva a ocorrência identificada e possíveis causas aparentes…';
-    taObs.value = foto.observacao;
-    taObs.addEventListener('input', e => { foto.observacao = e.target.value; });
-
-    // Intervenção
-    const lblInt = document.createElement('label');
-    lblInt.className = 'foto-field-lbl';
-    lblInt.style.marginTop = '2px';
-    lblInt.textContent = 'Intervenção recomendada';
-    const taInt = document.createElement('textarea');
-    taInt.className = 'foto-intervencao';
-    taInt.placeholder = 'Descreva a intervenção técnica recomendada…';
-    taInt.value = foto.intervencao;
-    taInt.addEventListener('input', e => { foto.intervencao = e.target.value; });
-
-    foot.append(lblTit, inpTit, lblObs, taObs, lblInt, taInt);
-    card.append(top, img, foot);
-    grid.appendChild(card);
-  });
-}
-
-/* ─── ÍNDICE DE FOTOS (seção 5) ─── */
-function updateFotoIndex() {
-  const el = document.getElementById('foto-index');
-  let html = '';
-  let total = 0;
-  AMBIENTES.forEach(amb => {
-    const fotos = fotosState[amb.id];
-    if (fotos.length === 0) return;
-    total += fotos.length;
-    const nums = fotos.map(f => String(f.globalNum).padStart(2,'0')).join(', ');
-    html += `
-      <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--line)">
-        <span style="font-family:var(--title);font-size:10px;color:var(--accent);font-weight:700;min-width:36px">${amb.num}</span>
-        <span style="flex:1;color:var(--ink2);font-size:13px">${amb.nome}</span>
-        <span style="font-family:var(--title);font-size:11px;color:var(--muted)">${fotos.length} foto${fotos.length>1?'s':''} · Foto ${nums}</span>
-      </div>`;
-  });
-  if (total === 0) html = '<p class="sec-text" style="color:var(--muted)">Nenhuma foto inserida ainda. Adicione fotos em cada ambiente na seção 4.</p>';
-  el.innerHTML = html;
-}
-
-/* ─── QUADRO RESUMO ─── */
-function generateSummary() {
-  const tbody = document.getElementById('resumo-body');
-  tbody.innerHTML = '';
-
-  const grupos = [
-    { crit: 'critico',  label: 'Crítico',  bc: 'rc', itens: [] },
-    { crit: 'moderado', label: 'Moderado', bc: 'rm', itens: [] },
-    { crit: 'estetico', label: 'Estético', bc: 're', itens: [] },
-  ];
-
-  AMBIENTES.forEach(amb => {
-    (itensState[amb.id] || []).forEach(item => {
-      if (!item.crit) return;
-      const grupo = grupos.find(g => g.crit === item.crit);
-      if (grupo) grupo.itens.push({ amb: amb.nome, texto: item.texto });
-    });
-  });
-
-  let total = 0;
-  grupos.forEach(grupo => {
-    if (grupo.itens.length === 0) return;
-    total += grupo.itens.length;
-
-    // Linha de cabeçalho do grupo
-    const trHead = document.createElement('tr');
-    trHead.innerHTML = `
-      <td colspan="3" style="
-        background: var(--surface2);
-        padding: 10px 18px;
-        font-family: var(--title);
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        border-bottom: 1px solid var(--line2);
-      ">
-        <span class="r-badge ${grupo.bc}">${grupo.label}</span>
-        <span style="color:var(--muted);margin-left:10px">${grupo.itens.length} item${grupo.itens.length > 1 ? 's' : ''}</span>
-      </td>`;
-    tbody.appendChild(trHead);
-
-    grupo.itens.forEach(it => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${it.amb}</td><td>${it.texto}</td><td><span class="r-badge ${grupo.bc}">${grupo.label}</span></td>`;
-      tbody.appendChild(tr);
-    });
-  });
-
-  if (total === 0) {
-    tbody.innerHTML = '<tr><td class="resumo-empty" colspan="3">Nenhum item classificado. Classifique os itens em cada ambiente e clique em "⟳ Resumo".</td></tr>';
-  }
-}
-
-/* ─── TOGGLE AMBIENTE ─── */
-function toggleAmb(id) {
-  document.getElementById('card-' + id).classList.toggle('closed');
-}
-function expandAll()   { AMBIENTES.forEach(a => document.getElementById('card-'+a.id).classList.remove('closed')); }
-function collapseAll() { AMBIENTES.forEach(a => document.getElementById('card-'+a.id).classList.add('closed')); }
-
-/* ─── LIGHTBOX ─── */
-function openLightbox(src) {
-  document.getElementById('lightbox-img').src = src;
-  document.getElementById('lightbox').classList.add('open');
-  document.addEventListener('keydown', onLightboxKey);
-}
-function closeLightbox() {
-  document.getElementById('lightbox').classList.remove('open');
-  document.getElementById('lightbox-img').src = '';
-  document.removeEventListener('keydown', onLightboxKey);
-}
-function onLightboxKey(e) { if (e.key === 'Escape') closeLightbox(); }
-
-/* ─── SCROLL ─── */
-function goTo(sel) {
-  const el = document.querySelector(sel);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-/* ════════════════════════════════════════════
-   AUTENTICAÇÃO E MODOS
-   Senha padrão: greco2026
-   Para alterar: mude a constante SENHA abaixo
-════════════════════════════════════════════ */
-const SENHA = 'greco2026';
-let editMode = false;
-
-function toggleAuth() {
-  if (editMode) {
-    // Sair do modo editor
-    setViewMode();
-  } else {
-    document.getElementById('authModal').classList.add('open');
-    document.getElementById('authInput').value = '';
-    document.getElementById('authError').style.display = 'none';
-    setTimeout(() => document.getElementById('authInput').focus(), 100);
-  }
-}
-
-function closeAuth() {
-  document.getElementById('authModal').classList.remove('open');
-}
-
-function doAuth() {
-  const val = document.getElementById('authInput').value;
-  if (val === SENHA) {
-    closeAuth();
-    setEditMode();
-  } else {
-    document.getElementById('authError').style.display = 'block';
-    document.getElementById('authInput').value = '';
-    document.getElementById('authInput').focus();
-  }
-}
-
-function setEditMode() {
-  editMode = true;
-  document.body.classList.add('edit-mode');
-  document.getElementById('mode-badge').className = 'edit';
-  document.getElementById('mode-badge').textContent = 'Modo Editor';
-  document.getElementById('btn-lock').textContent = '🔓';
-  document.getElementById('btn-lock').title = 'Sair do modo editor';
-  document.getElementById('btn-export').style.display = '';
-  // Reativar tudo
-  document.querySelectorAll('[contenteditable]').forEach(el => el.setAttribute('contenteditable','true'));
-  document.querySelectorAll('.foto-titulo, .foto-leg, .foto-intervencao, .sintese-box, .ficha-cell input').forEach(el => el.readOnly = false);
-  document.querySelectorAll('.crit-sel').forEach(el => el.disabled = false);
-}
-
-function autoExpandTextareas() {
-  /* LINHA ~1388 — Ajusta a altura dos campos de texto na tela.
-     Isso melhora a leitura no navegador, mas sozinho não resolve o PDF. */
-  document.querySelectorAll('textarea').forEach(ta => {
-    ta.style.overflow = 'hidden';
-    ta.style.resize = 'none';
-    ta.style.height = 'auto';
-    ta.style.height = (ta.scrollHeight + 8) + 'px';
-  });
-}
-
-function setViewMode() {
-  editMode = false;
-  document.body.classList.remove('edit-mode');
-  document.getElementById('mode-badge').className = 'view';
-  document.getElementById('mode-badge').textContent = 'Visualização';
-  document.getElementById('btn-lock').textContent = '🔒';
-  document.getElementById('btn-lock').title = 'Entrar no modo editor';
-  document.getElementById('btn-export').style.display = 'none';
-  // Desativar contenteditable
-  document.querySelectorAll('[contenteditable]').forEach(el => el.setAttribute('contenteditable','false'));
-  document.querySelectorAll('.foto-titulo, .foto-leg, .foto-intervencao, .sintese-box, .ficha-cell input').forEach(el => el.readOnly = true);
-  document.querySelectorAll('.crit-sel').forEach(el => el.disabled = true);
-  autoExpandTextareas();
-}
-
-/* ════════════════════════════════════════════
-   EXPORTAR RELATÓRIO
-   Gera HTML completo com fotos embutidas,
-   sem senha, bloqueado em modo leitura.
-════════════════════════════════════════════ */
-function exportReport() {
-  // Serializar estado completo em JSON
-  const state = {
-    ficha: {
-      cliente: document.getElementById('fc').value,
-      emp:     document.getElementById('fe').value,
-      loc:     document.getElementById('fl').value,
-      data:    document.getElementById('fd').value,
-    },
-    itens:    {},
-    fotos:    {},
-    sintese:  {},
-    textos:   [],
-  };
-
-  AMBIENTES.forEach(a => {
-    state.itens[a.id]   = itensState[a.id];
-    state.fotos[a.id]   = fotosState[a.id];
-    state.sintese[a.id] = sinteseState[a.id];
-  });
-
-  // Capturar textos editáveis das seções (objetivo, metodologia, considerações)
-  document.querySelectorAll('.sec-text[contenteditable]').forEach((el, i) => {
-    state.textos[i] = el.innerHTML;
-  });
-
-  // Serializar para JSON embutido no HTML exportado
-  const stateJSON = JSON.stringify(state).replace(/<\/script>/gi, '<\\/script>');
-
-  // Construir o HTML exportado como página standalone (view-only)
-  const exportedHTML = buildExportHTML(stateJSON);
-
-  const blob = new Blob([exportedHTML], { type: 'text/html;charset=utf-8' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-
-  // Nome do arquivo com data
-  const hoje = new Date();
-  const dd = String(hoje.getDate()).padStart(2,'0');
-  const mm = String(hoje.getMonth()+1).padStart(2,'0');
-  const aa = hoje.getFullYear();
-  const cliente = (document.getElementById('fc').value || 'Relatório').replace(/[^a-zA-Z0-9]/g,'_');
-  a.download = `Vistoria_${cliente}_${dd}${mm}${aa}.html`;
-
-  a.href = url;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-function buildExportHTML(stateJSON) {
-  // Pegar os estilos da página atual
-  const styles = document.querySelector('style').outerHTML;
-
-  return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Greco Arquitetura — Vistoria</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;800&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
-${styles}
 <style>
 /* Exportado — sempre view mode */
 .add-item-btn, .item-del-btn, .foto-add-btn, .drop-zone,
@@ -1616,8 +754,8 @@ ${styles}
   </div>
 </div>
 <script>
-const _STATE = ${stateJSON};
-const _AMBIENTES_EXPORT = ${JSON.stringify(AMBIENTES.map(a => ({id:a.id, num:a.num, nome:a.nome})))};
+const _STATE = {"ficha": {"cliente": "João André", "emp": "Edifício Villa Reale", "loc": "Nova Lima – MG", "data": "02/06/2026"}, "itens": {"a01": [{"id": "inpazamk0fs", "texto": "Falhas de acabamento entre marcenaria e esquadrias", "crit": "moderado"}, {"id": "i75dljgdcnkp", "texto": "Espaçamentos excessivos entre módulos de marcenaria", "crit": "moderado"}, {"id": "i0lcob4xdk2pj", "texto": "Desalinhamento entre painéis da marcenaria planejada", "crit": "estetico"}, {"id": "icny9zgjq4s", "texto": "Recortes irregulares e acabamento incompleto em painéis de marcenaria", "crit": "estetico"}, {"id": "i6rfv7tw5v", "texto": "Parafusos aparentes e ausência de tapa-furos em marcenaria", "crit": "estetico"}, {"id": "iitsk35h9az", "texto": "Fiação elétrica aparente e instalações expostas", "crit": "critico"}, {"id": "ied0i4dx0p8o", "texto": "Tomadas sem fixação adequada / espelhos pendentes", "crit": "critico"}, {"id": "i09tq6tg7j7aq", "texto": "Ausência de espelhos, tampas cegas e acabamentos elétricos definitivos", "crit": "moderado"}, {"id": "ikptverties", "texto": "Necessidade de ocultação técnica de cabeamentos aparentes", "crit": "moderado"}, {"id": "iplaaw4pnx2o", "texto": "Peças de marcenaria com sinais de estufamento e deterioração por umidade", "crit": "moderado"}, {"id": "ih4v7lw8nr7a", "texto": "Desgaste e manchas em peitoris e revestimentos amadeirados", "crit": "estetico"}, {"id": "idsdu9bnsn9e", "texto": "Falhas de arremate e vedação entre materiais distintos", "crit": "moderado"}, {"id": "ipnl4isgsd1k", "texto": "Granito com avarias, lascamentos e peças comprometidas", "crit": "moderado"}, {"id": "in18wdxxg2v", "texto": "Necessidade de recuperação (lixamento) ou substituição de elementos pétreos danificados", "crit": "moderado"}, {"id": "ichmh36qcetr", "texto": "Piso de madeira com fissuras, deformações e abertura entre réguas", "crit": "moderado"}, {"id": "ifbvh18352gq", "texto": "Piso de madeira com peças estouradas/comprometidas, necessitando substituição localizada", "crit": "moderado"}, {"id": "ixxvzj1sawfk", "texto": "Falhas de acabamento junto aos encontros entre piso, marcenaria e revestimentos", "crit": "estetico"}, {"id": "iyv748pyh08m", "texto": "Instalações técnicas sob bancada sem acabamento definitivo", "crit": "estetico"}], "a02": [{"id": "iv8qdf7rodle", "texto": "Degradação e desalinhamento do deck de madeira — desgaste, esbranquiçamento, empenamento e furos aparentes", "crit": "moderado"}, {"id": "iaxzi636z4h6", "texto": "Falhas de acabamento e fixação no deck — parafusos/furos aparentes e desalinhamentos pontuais entre peças", "crit": "moderado"}, {"id": "ibima8ibcnm5", "texto": "Revestimento pétreo solto, ausente e desalinhado na parede da piscina", "crit": "moderado"}, {"id": "ih0olhgqdft6", "texto": "Piso pétreo quebrado e deteriorado no entorno da piscina — peças quebradas, trincadas, destacadas e áreas sem revestimento", "crit": "critico"}, {"id": "i8nw6apb1xgu", "texto": "Sujidade, desgaste e deterioração do rejuntamento no entorno da piscina", "crit": "moderado"}, {"id": "i850smla9bgb", "texto": "Presença de vegetação espontânea e acúmulo de resíduos em trilhos e drenos", "crit": "moderado"}, {"id": "iqn3ui3pijlm", "texto": "Corrosão e deterioração do equipamento de aquecimento/apoio da piscina — componentes metálicos oxidados e conexões degradadas", "crit": "critico"}], "a03": [{"id": "iqa6pploj7mq", "texto": "Acúmulo de detritos e vegetação em trilhos, canaletas e drenagem das esquadrias", "crit": "moderado"}, {"id": "iy5kbo9pko5", "texto": "Falhas de acabamento e desalinhamento em luminárias embutidas junto ao revestimento pétreo", "crit": "moderado"}, {"id": "iy3d8idpqee", "texto": "Desgaste e deterioração do mobiliário externo em madeira — desbotamento, manchas e degradação por intempéries", "crit": "moderado"}, {"id": "ikfnzep88hj", "texto": "Presença de vegetação espontânea junto às esquadrias e juntas do piso — retenção de umidade", "crit": "moderado"}, {"id": "i1vwvyp6u4vv", "texto": "Indícios de umidade em forro/rebaixo junto à esquadria — possível infiltração ou falha de vedação", "crit": "critico"}, {"id": "ihvoevuz5yn5", "texto": "Desgaste superficial em perfis de esquadrias de alumínio — riscos e perda pontual do acabamento", "crit": "estetico"}, {"id": "i444h6jl1tn", "texto": "Manchas e deformações em cortinas blackout — escorrimentos e ondulações excessivas", "crit": "estetico"}, {"id": "iodn9x0fnybd", "texto": "Falhas de acabamento entre marcenaria, revestimentos e esquadrias — arremates irregulares", "crit": "moderado"}, {"id": "i8c27squ3bhm", "texto": "Oxidação em grelha de ralo e deterioração do acabamento periférico", "crit": "moderado"}, {"id": "itpnivynn48", "texto": "Deterioração localizada de painel amadeirado por umidade junto à esquadria", "crit": "critico"}], "a04": [{"id": "ixge0a9jwz6", "texto": "Desgaste acentuado do piso amadeirado — perda de proteção, manchas e possível ação de umidade junto às esquadrias", "crit": "critico"}, {"id": "ij55nwitevd", "texto": "Aberturas e movimentação entre réguas do piso amadeirado", "crit": "moderado"}, {"id": "i1m4burnnq9e", "texto": "Ponto de drenagem sem acabamento adequado — acúmulo de sujeira e exposição de eletroduto", "crit": "moderado"}, {"id": "iloienjz5mi", "texto": "Desgaste em difusor/grade embutida — riscos e avarias no acabamento periférico", "crit": "estetico"}, {"id": "inqsqgrucow", "texto": "Marcações em tinta e avarias no piso amadeirado", "crit": "moderado"}, {"id": "ithi7v7tmfa9", "texto": "Folga e desalinhamento em mesa lateral — instabilidade no sistema de fixação", "crit": "estetico"}, {"id": "i7e6au9yqys8", "texto": "Manchas superficiais em mobiliário estofado", "crit": "estetico"}, {"id": "iv4il40a3ot", "texto": "Falhas no perfil de transição entre mármore e piso amadeirado — deterioração do acabamento metálico", "crit": "moderado"}, {"id": "ionnehwtg36r", "texto": "Cortinas com acúmulo severo de sujeira, manchas e deformações", "crit": "moderado"}, {"id": "ix04nr3bnz0g", "texto": "Obstrução e sujeira em trilhos de esquadria — possível bloqueio da drenagem", "crit": "critico"}, {"id": "if1lpbas8fc", "texto": "Falhas de acabamento no cortineiro — frestas e arremates irregulares entre marcenaria, parede e cortina", "crit": "moderado"}, {"id": "iikpzhququ6i", "texto": "Fissuração capilar sobre esquadrias — possível movimentação diferencial entre materiais", "crit": "estetico"}, {"id": "iymv47kzcr3", "texto": "Falhas de arremate entre elementos construtivos — frestas aparentes nos encontros", "crit": "moderado"}], "a05": [{"id": "i7a2obzf3nar", "texto": "Substituição e padronização das torneiras", "crit": ""}, {"id": "io8rmv9zfpm", "texto": "Revisão de ferragens da marcenaria, incluindo dobradiças e trilhos telescópicos", "crit": ""}, {"id": "iz7yo46jv18", "texto": "Adequação do nicho para embutimento de micro-ondas", "crit": ""}, {"id": "iaolozdv3oi", "texto": "Revisão do sistema elétrico terminal", "crit": ""}, {"id": "iy0llt2cs3x", "texto": "Verificação funcional dos eletrodomésticos", "crit": ""}, {"id": "ijet5hxpje3", "texto": "Revisão hidráulica de pontos de pia e drenagem", "crit": ""}, {"id": "i0xsavdt3t0af", "texto": "Instalação de equipamento lava-louças", "crit": ""}], "a06": [{"id": "ip99pg2xvpl", "texto": "Investigação de infiltração associada à esquadria", "crit": ""}, {"id": "iyzwfhpb3q7j", "texto": "Substituição do revestimento decorativo de parede", "crit": ""}, {"id": "isurp3rx952", "texto": "Adequação do mobiliário do painel/rack", "crit": ""}, {"id": "iwbbyw01q4fl", "texto": "Revisão dos equipamentos de sonorização", "crit": ""}, {"id": "i3j09nearh39", "texto": "Verificação funcional da tela de projeção", "crit": ""}, {"id": "i02vt10tigye9", "texto": "Recomposição de acabamento sob escada", "crit": ""}, {"id": "i6l5zk3pc43i", "texto": "Revisão elétrica geral", "crit": ""}, {"id": "iwwdyqqej6nm", "texto": "Higienização e impermeabilização do mobiliário estofado", "crit": ""}], "a13": [{"id": "iz4skjaajvik", "texto": "Substituição do revestimento de parede (papel de parede/revestimento decorativo)", "crit": ""}, {"id": "iop6okmpqjhl", "texto": "Substituição ou adequação do mobiliário de apoio do aquário", "crit": ""}, {"id": "i5ob74s1z959", "texto": "Recuperação e repintura do teto", "crit": ""}, {"id": "ik894xe1r8oi", "texto": "Revisão do sistema de áudio embutido", "crit": ""}, {"id": "i56vht8tg8ac", "texto": "Investigação de sinais de umidade próximos ao aquário", "crit": ""}, {"id": "ix4j6u0wjapk", "texto": "Verificação e recuperação das juntas de movimentação do forro de gesso", "crit": ""}], "a07": [{"id": "i3ck1l7qomvf", "texto": "Substituição de elementos sanitários danificados (cuba/vidro)", "crit": ""}, {"id": "ivqhokyw47mq", "texto": "Revisão dos sistemas de drenagem", "crit": ""}, {"id": "i8181h5daxt", "texto": "Revisão do sistema hidráulico aparente", "crit": ""}, {"id": "i0jyzdct6bfbw", "texto": "Substituição de luminárias", "crit": ""}, {"id": "i6nmylvmyefe", "texto": "Fixação e regularização da ducha higiênica", "crit": ""}], "a09": [{"id": "iryb99zbprjf", "texto": "Revisão elétrica geral", "crit": ""}, {"id": "ir7negamve98", "texto": "Verificação técnica do shaft", "crit": ""}, {"id": "ijayuqufqlo", "texto": "Recuperação superficial e repintura do banheiro", "crit": ""}, {"id": "iag0ibwwrzhb", "texto": "Limpeza técnica pós-obra de revestimentos", "crit": ""}, {"id": "ireiitflnr9h", "texto": "Revisão de trilhos da marcenaria", "crit": ""}, {"id": "ixuqv6k5knbf", "texto": "Investigação de infiltrações em armários", "crit": ""}, {"id": "iux834czmbse", "texto": "Substituição de vidro danificado", "crit": ""}], "a10": [{"id": "i28v0mjqv00v", "texto": "Revisão de tomadas e interruptores", "crit": ""}, {"id": "iryirqv63m28", "texto": "Recuperação de mobiliário do banheiro", "crit": ""}, {"id": "ilewih5h8s1", "texto": "Ajuste de ferragens", "crit": ""}, {"id": "isbx6n4liiur", "texto": "Verificação técnica de vidros", "crit": ""}, {"id": "i77fk0z2d824", "texto": "Limpeza técnica de box", "crit": ""}, {"id": "i02n185jhdsca", "texto": "Regularização de acabamentos e furos aparentes", "crit": ""}], "a12": [{"id": "i5gw34dcunhc", "texto": "Recuperação e recomposição de rejuntamentos", "crit": ""}, {"id": "ikrxxs0x1yum", "texto": "Tratamento preventivo de infiltrações", "crit": ""}, {"id": "i6pt2q1aaa2l", "texto": "Recuperação de mobiliário em madeira", "crit": ""}, {"id": "ies41gux93dn", "texto": "Substituição de arandelas", "crit": ""}, {"id": "i8bvzjtu42l9", "texto": "Revisão do sistema de sonorização", "crit": ""}, {"id": "idohdrgjvjsw", "texto": "Verificação funcional da sauna", "crit": ""}, {"id": "ignkp5is63tq", "texto": "Revisão do sistema hidráulico/pressurização", "crit": ""}, {"id": "iyou2tuiynpa", "texto": "Substituição da marcenaria inferior da bancada", "crit": ""}], "a11": [{"id": "i9pve9tsgu3", "texto": "Recuperação de elementos de marcenaria comprometidos", "crit": ""}, {"id": "ie9yz2v7xmuv", "texto": "Refixação de ferragens e puxadores", "crit": ""}, {"id": "ir0m17wwjh9i", "texto": "Investigação de possíveis infiltrações no forro", "crit": ""}, {"id": "izge9f143wxb", "texto": "Substituição localizada de revestimentos decorativos", "crit": ""}, {"id": "iru6o7yifird", "texto": "Revisão do sistema elétrico", "crit": ""}, {"id": "if2ti14vtleo", "texto": "Recuperação de elementos de drenagem", "crit": ""}, {"id": "i2438l0bbhuq", "texto": "Revisão de ferragens de portas e pivôs", "crit": ""}, {"id": "iesinfvc2eu", "texto": "Recuperação do mobiliário do banheiro", "crit": ""}], "a14": [{"id": "i4x88ek7u924", "texto": "Levantamento de intervenções — aguardando vistoria", "crit": ""}], "a08": [{"id": "ibijngzyrqau", "texto": "Revisão do sistema elétrico terminal", "crit": ""}, {"id": "igy7xn1qvzaw", "texto": "Regularização do quadro de distribuição elétrica (QDC)", "crit": ""}, {"id": "iz1w7e4ywiw", "texto": "Recuperação ou substituição de marcenaria comprometida por umidade", "crit": ""}], "a15": [{"id": "ipwurqhyhyu", "texto": "Levantamento de intervenções — aguardando vistoria", "crit": ""}]}, "fotos": {"a01": [], "a02": [], "a03": [], "a04": [], "a05": [], "a06": [], "a13": [], "a07": [], "a09": [], "a10": [], "a12": [], "a11": [], "a14": [], "a08": [], "a15": []}, "sintese": {"a01": "De forma geral, a varanda gourmet apresenta inconformidades relacionadas a acabamentos incompletos, falhas de marcenaria, frestas excessivas, instalações elétricas aparentes, ausência de acabamentos definitivos em pontos elétricos, desgaste de revestimentos, avarias em elementos pétreos e comprometimento localizado do piso de madeira.\n\nRecomenda-se a realização de ajustes de marcenaria, instalação definitiva dos acabamentos elétricos (espelhos, tampas cegas e fixações), ocultação de cabeamentos aparentes, execução de tapa-furos e acabamento de parafusos aparentes, substituição de peças de madeira comprometidas por estufamento ou fissuração, bem como recuperação ou substituição dos elementos pétreos danificados, visando compatibilizar o ambiente com o padrão estético, funcional e construtivo esperado.", "a02": "O ambiente da piscina apresenta inconformidades predominantemente relacionadas à deterioração do deck de madeira, comprometimento do revestimento pétreo do entorno, falhas no revestimento vertical e sinais de desgaste dos componentes de apoio do sistema da piscina.\n\nDestacam-se como itens prioritários a substituição dos pisos quebrados do entorno da piscina e a avaliação do equipamento oxidado, por apresentarem potencial risco funcional e de segurança. Observa-se ainda necessidade de manutenção corretiva e estética do deck de madeira e recomposição localizada dos revestimentos pétreos.", "a03": "O ambiente da varanda lateral direita apresenta inconformidades relacionadas principalmente à ausência de manutenção preventiva das esquadrias e seus elementos periféricos, com acúmulo de vegetação e resíduos em trilhos e canaletas, falhas de acabamento em luminárias e deterioração do mobiliário externo.\n\nDestacam-se como itens prioritários os indícios de umidade no forro junto à esquadria e a deterioração localizada do painel amadeirado, que indicam possível falha de vedação com risco de agravamento. Recomenda-se investigação técnica da origem da umidade antes da execução dos demais serviços de acabamento.", "a04": "A sala de estar apresenta inconformidades concentradas no piso amadeirado, com desgaste acentuado do acabamento superficial, aberturas entre réguas e marcações aparentes. Destacam-se também o acúmulo severo de sujeira nas cortinas, a obstrução de trilhos de esquadria e fissuração capilar sobre esquadrias como itens que demandam atenção.\n\nRecomenda-se priorizar a recuperação do piso, limpeza técnica dos elementos têxteis, desobstrução dos trilhos e investigação das fissuras observadas, visando o restabelecimento do padrão estético e funcional do ambiente.", "a05": "", "a06": "", "a13": "", "a07": "", "a09": "", "a10": "", "a12": "", "a11": "", "a14": "", "a08": "", "a15": ""}, "textos": ["O presente relatório tem como objetivo apresentar o levantamento técnico visual das condições aparentes do imóvel vistoriado, identificando manifestações patológicas, falhas funcionais, desgastes naturais, avarias construtivas, itens de manutenção corretiva e adequações recomendadas, visando a preparação do imóvel para futura locação.", "A vistoria foi realizada de forma predominantemente visual, considerando os aspectos arquitetônicos, construtivos, elétricos, hidráulicos, de marcenaria, revestimentos, esquadrias, iluminação e equipamentos aparentes, sem a realização de ensaios destrutivos ou testes invasivos.", "As observações aqui descritas poderão demandar inspeções complementares específicas para confirmação de causas, patologias ocultas ou condições técnicas não visíveis durante a vistoria.", "Com base na vistoria realizada, o imóvel apresenta um quadro técnico que demanda intervenções significativas antes da disponibilização para locação. Foram identificados itens críticos em praticamente todos os ambientes vistoriados, com destaque para instalações elétricas com fiação exposta ou desencapada, infiltrações ativas em múltiplos pavimentos, equipamentos em estado avançado de degradação e revestimentos com risco de queda ou fratura.", "As patologias de maior relevância concentram-se nas áreas externas e de lazer — piscina, varandas e decks — e nos sistemas de automação e elétrica, que apresentam instalações incompletas ou em desconformidade com as normas técnicas vigentes. Infiltrações sistêmicas associadas às esquadrias e lajes constituem o problema de maior abrangência, afetando acabamentos, marcenaria e segurança elétrica de forma encadeada.", "Recomenda-se a execução das intervenções priorizando os itens classificados como críticos — em especial o aquecedor da piscina, os pontos com fiação desencapada, as claraboias trincadas e os pontos de infiltração ativa —, seguidos dos itens moderados e estéticos, visando garantir segurança, adequado desempenho construtivo, valorização patrimonial e melhores condições de uso ao futuro locatário."]};
+const _AMBIENTES_EXPORT = [{"id":"a01","num":"4.1","nome":"Varanda Gourmet"},{"id":"a02","num":"4.2","nome":"Área da Piscina"},{"id":"a03","num":"4.3","nome":"Varanda Lat. Direita"},{"id":"a04","num":"4.4","nome":"Sala de Estar"},{"id":"a05","num":"4.5","nome":"Cozinha"},{"id":"a06","num":"4.6","nome":"Sala de TV"},{"id":"a13","num":"4.7","nome":"Sala de Jantar"},{"id":"a07","num":"4.8","nome":"Lavabo"},{"id":"a09","num":"4.9","nome":"Suíte 01"},{"id":"a10","num":"4.10","nome":"Suíte 02"},{"id":"a12","num":"4.11","nome":"Área Gourmet — 2º Pavimento"},{"id":"a11","num":"4.12","nome":"Suíte Master"},{"id":"a14","num":"4.13","nome":"Sala de Estar — 2º Pavimento"},{"id":"a08","num":"4.14","nome":"DCE — Lavanderia"},{"id":"a15","num":"4.15","nome":"Hall"}];
 
 // Ficha
 const fc = _STATE.ficha;
@@ -1676,7 +814,7 @@ _AMBIENTES_EXPORT.forEach(amb => {
     : (sintese ? '<div class="foto-zone">'+sinteseHTML+'</div>' : '');
 
   ambRoot.innerHTML += '<div class="amb-wrap"><div class="amb-card" id="card-'+amb.id+'">'
-    +'<div class="amb-hdr" onclick="this.closest(\'.amb-card\').classList.toggle(\'closed\')">'
+    +'<div class="amb-hdr" onclick="this.closest('.amb-card').classList.toggle('closed')">'
     +'<span class="amb-num">'+amb.num+'</span><span class="amb-name">'+amb.nome+'</span>'
     +'<span class="amb-chevron">▾</span></div>'
     +'<div class="amb-body"><ul class="itens-list">'+itensHTML+'</ul>'+fotoZoneHTML+'</div>'
@@ -1715,348 +853,44 @@ document.getElementById('resumo-export').innerHTML = resumoHTML ||
   '<tr><td class="resumo-empty" colspan="3">Nenhum item classificado.</td></tr>';
 
 
-/* PDF sem scroll também no HTML exportado */
-function autoExpandTextareas() {
-  document.querySelectorAll('textarea').forEach(ta => {
-    ta.style.overflow = 'hidden';
-    ta.style.resize = 'none';
-    ta.style.height = 'auto';
-    ta.style.height = (ta.scrollHeight + 8) + 'px';
-  });
-}
-function criarEspelhosDeTextoParaPrint() {
-  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
-  document.querySelectorAll('textarea').forEach(ta => {
-    const mirror = document.createElement('div');
-    mirror.className = 'print-textarea-mirror';
-    mirror.textContent = ta.value || ta.textContent || '';
-    ta.classList.add('print-hidden');
-    ta.insertAdjacentElement('afterend', mirror);
-  });
-}
-function limparEspelhosDeTextoParaPrint() {
-  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
-  document.querySelectorAll('textarea.print-hidden').forEach(ta => ta.classList.remove('print-hidden'));
-}
+// ══════════════════════════════════════════════
+// PREPARAR PDF — converte textareas em divs
+// para garantir que todo o texto apareça no PDF
+// ══════════════════════════════════════════════
 function prepararPDF() {
-  document.querySelectorAll('.amb-card.closed').forEach(card => card.classList.remove('closed'));
-  autoExpandTextareas();
-  criarEspelhosDeTextoParaPrint();
-  setTimeout(() => window.print(), 300);
-}
-window.addEventListener('load', autoExpandTextareas);
-window.addEventListener('beforeprint', () => { autoExpandTextareas(); criarEspelhosDeTextoParaPrint(); });
-window.addEventListener('afterprint', limparEspelhosDeTextoParaPrint);
+  // 1. Expandir todos os ambientes fechados
+  document.querySelectorAll('.amb-card.closed').forEach(el => el.classList.remove('closed'));
 
-<\/script>
-</body>
-</html>`;
-}
-
-/* ════════════════════════════════════════════
-   FIREBASE — INICIALIZAÇÃO
-════════════════════════════════════════════ */
-const firebaseConfig = {
-  apiKey:            "AIzaSyC5I4XsXB0oQVXCleJrnZWqtP2KKzTvzBQ",
-  authDomain:        "greco-vistoria.firebaseapp.com",
-  projectId:         "greco-vistoria",
-  storageBucket:     "greco-vistoria.firebasestorage.app",
-  messagingSenderId: "955632075539",
-  appId:             "1:955632075539:web:33a88661cc50722c33d0e6",
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-let currentReportId = null;
-
-/* ─── Helpers ─── */
-function showToast(msg, type = 'ok', ms = 3000) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'show ' + type;
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => { t.className = ''; }, ms);
-}
-
-
-function genId() {
-  return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-}
-
-/* ════════════════════════════════════════════
-   SALVAR NA NUVEM
-════════════════════════════════════════════ */
-/* Comprime foto para versão menor (salvo na nuvem) */
-function compressForCloud(src) {
-  return new Promise(resolve => {
-    if (!src || !src.startsWith('data:')) { resolve(src); return; }
-    const img = new Image();
-    img.onload = () => {
-      const MAX = 900;
-      let w = img.width, h = img.height;
-      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
-      const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(c.toDataURL('image/jpeg', 0.62));
-    };
-    img.onerror = () => resolve(src);
-    img.src = src;
+  // 2. Converter textareas em divs temporários
+  const textareas = document.querySelectorAll('textarea.foto-leg, textarea.foto-intervencao, textarea.sintese-box');
+  textareas.forEach(ta => {
+    const div = document.createElement('div');
+    div.className = 'print-div ' + (
+      ta.classList.contains('sintese-box') ? 'sintese' :
+      ta.classList.contains('foto-intervencao') ? 'interv' : 'leg'
+    );
+    div.textContent = ta.value;
+    div.dataset.printReplace = 'true';
+    ta.parentNode.insertBefore(div, ta);
+    ta.style.display = 'none';
+    ta.dataset.hiddenForPrint = 'true';
   });
-}
 
-async function saveToCloud() {
-  const btn = document.getElementById('btn-save');
-  btn.textContent = '⏳ Salvando…';
-  btn.classList.add('saving');
-
-  try {
-    if (!currentReportId) currentReportId = genId();
-    const rid = currentReportId;
-
-    // ── Capturar textos editáveis ──
-    const textos = [];
-    document.querySelectorAll('.sec-text[contenteditable]').forEach(el => textos.push(el.innerHTML));
-
-    // ── Salvar metadados no documento principal ──
-    showToast('Salvando dados…', 'ok', 60000);
-    await db.collection('reports').doc(rid).set({
-      savedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      ficha:   {
-        cliente: document.getElementById('fc').value,
-        emp:     document.getElementById('fe').value,
-        loc:     document.getElementById('fl').value,
-        data:    document.getElementById('fd').value,
-      },
-      itens:   itensState,
-      sintese: sinteseState,
-      textos,
-    });
-
-    // ── Apagar todas as fotos antigas no Firebase antes de salvar ──
-    // (evita duplicatas de sessões anteriores)
-    showToast('Limpando fotos antigas…', 'ok', 60000);
-    const oldPhotos = await db.collection('reports').doc(rid).collection('photos').get();
-    await Promise.all(oldPhotos.docs.map(d => d.ref.delete()));
-
-    // ── Salvar cada foto em subcoleção separada (comprimida) ──
-    const totalFotos = AMBIENTES.reduce((s, a) => s + fotosState[a.id].length, 0);
-    let done = 0;
-
-    for (const amb of AMBIENTES) {
-      for (const foto of fotosState[amb.id]) {
-        done++;
-        showToast(`Salvando fotos… ${done}/${totalFotos}`, 'ok', 60000);
-        const compressed = await compressForCloud(foto.src);
-        await db.collection('reports').doc(rid)
-          .collection('photos').doc(foto.id).set({
-            ambId:       amb.id,
-            globalNum:   foto.globalNum,
-            src:         compressed,
-            titulo:      foto.titulo      || '',
-            observacao:  foto.observacao  || '',
-            intervencao: foto.intervencao || '',
-          });
-        foto.cloudSaved = true;
-      }
-    }
-
-    // ── Mostrar link ──
-    const link = `${location.origin}${location.pathname}?r=${rid}`;
-    document.getElementById('shareLinkInput').value = link;
-    document.getElementById('shareModal').classList.add('open');
-    showToast('✅ Salvo!', 'ok');
-
-  } catch (err) {
-    console.error(err);
-    showToast('❌ Erro: ' + err.message, 'err', 6000);
-  } finally {
-    btn.textContent = '☁️ Salvar';
-    btn.classList.remove('saving');
-  }
-}
-
-/* ════════════════════════════════════════════
-   CARREGAR DA NUVEM
-════════════════════════════════════════════ */
-async function loadFromCloud(rid) {
-  showToast('Carregando relatório…', 'ok', 60000);
-  try {
-    const snap = await db.collection('reports').doc(rid).get();
-    if (!snap.exists) { showToast('❌ Relatório não encontrado.', 'err', 5000); return; }
-
-    const d = snap.data();
-    currentReportId = rid;
-
-    // Ficha
-    if (d.ficha) {
-      document.getElementById('fc').value = d.ficha.cliente || '';
-      document.getElementById('fe').value = d.ficha.emp     || '';
-      document.getElementById('fl').value = d.ficha.loc     || '';
-      document.getElementById('fd').value = d.ficha.data    || '';
-    }
-
-    // Itens (com criticidade)
-    if (d.itens) {
-      AMBIENTES.forEach(a => {
-        if (d.itens[a.id]) itensState[a.id] = d.itens[a.id];
-      });
-    }
-
-    // Sínteses
-    if (d.sintese) Object.assign(sinteseState, d.sintese);
-
-    // Fotos — carrega da subcoleção photos
-    const photosSnap = await db.collection('reports').doc(rid).collection('photos').get();
-    let maxNum = 0;
-    AMBIENTES.forEach(a => { fotosState[a.id] = []; });
-    photosSnap.forEach(doc => {
-      const f = doc.data();
-      if (!fotosState[f.ambId]) return;
-      fotosState[f.ambId].push({
-        id:          doc.id,
-        src:         f.src,
-        cloudSaved:  true,
-        titulo:      f.titulo      || '',
-        observacao:  f.observacao  || '',
-        intervencao: f.intervencao || '',
-        globalNum:   f.globalNum   || 0,
-      });
-      if (f.globalNum > maxNum) maxNum = f.globalNum;
-    });
-    // Ordenar por globalNum dentro de cada ambiente
-    AMBIENTES.forEach(a => {
-      fotosState[a.id].sort((x, y) => x.globalNum - y.globalNum);
-    });
-    globalCounter = maxNum;
-
-    // Re-renderizar ambientes (cria os elementos do DOM)
-    renderAmbientes();
-
-    // Renderizar fotos em cada ambiente (precisa ser após renderAmbientes)
-    AMBIENTES.forEach(a => {
-      if (fotosState[a.id].length > 0) {
-        renderFotos(a.id);
-        const drop = document.getElementById('drop-' + a.id);
-        if (drop) drop.classList.add('hidden');
-      }
-    });
-
-    updateFotoIndex();
-
-    // Textos editáveis
-    if (d.textos) {
-      document.querySelectorAll('.sec-text[contenteditable]').forEach((el, i) => {
-        if (d.textos[i] !== undefined) el.innerHTML = d.textos[i];
-      });
-    }
-
-    // Gerar resumo automaticamente
-    generateSummary();
-    // Aplicar modo leitura nos novos elementos renderizados
-    if (!editMode) {
-      document.querySelectorAll('.foto-titulo, .foto-leg, .foto-intervencao, .sintese-box, .ficha-cell input').forEach(el => el.readOnly = true);
-      document.querySelectorAll('.crit-sel').forEach(el => el.disabled = true);
-    }
-    // Expandir textareas
-    autoExpandTextareas();
-
-    showToast('✅ Relatório carregado!', 'ok');
-
-  } catch (err) {
-    console.error(err);
-    showToast('❌ Erro ao carregar: ' + err.message, 'err', 6000);
-  }
-}
-
-/* ─── Copiar link ─── */
-function copyShareLink() {
-  const inp = document.getElementById('shareLinkInput');
-  inp.select();
-  document.execCommand('copy');
-  showToast('🔗 Link copiado!', 'ok');
-}
-
-/* ════════════════════════════════════════════
-   ATUALIZAR setEditMode para mostrar btn-save
-════════════════════════════════════════════ */
-const _origSetEditMode = setEditMode;
-setEditMode = function() {
-  _origSetEditMode();
-  document.getElementById('btn-save').style.display = '';
-};
-const _origSetViewMode = setViewMode;
-setViewMode = function() {
-  _origSetViewMode();
-  document.getElementById('btn-save').style.display = 'none';
-};
-
-
-
-/* ═════════════════════════════════════════════════════════════
-   FUNÇÕES DO PDF SEM SCROLL — LINHA ~1880
-   Resumo simples:
-   - criarEspelhosDeTextoParaPrint(): copia cada textarea para uma div.
-   - limparEspelhosDeTextoParaPrint(): apaga essas divs depois do PDF.
-   - prepararPDF(): expande tudo, cria as cópias e abre a janela de imprimir.
-   - beforeprint/afterprint: garante o mesmo efeito se usar Ctrl+P.
-═════════════════════════════════════════════════════════════ */
-function criarEspelhosDeTextoParaPrint() {
-  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
-
-  document.querySelectorAll('textarea').forEach(ta => {
-    const mirror = document.createElement('div');
-    mirror.className = 'print-textarea-mirror';
-    mirror.textContent = ta.value || ta.textContent || '';
-
-    ta.classList.add('print-hidden');
-    ta.insertAdjacentElement('afterend', mirror);
-  });
-}
-
-function limparEspelhosDeTextoParaPrint() {
-  document.querySelectorAll('.print-textarea-mirror').forEach(el => el.remove());
-  document.querySelectorAll('textarea.print-hidden').forEach(ta => {
-    ta.classList.remove('print-hidden');
-  });
-}
-
-function prepararPDF() {
-  expandAll();
-  autoExpandTextareas();
-  criarEspelhosDeTextoParaPrint();
-
+  // 3. Imprimir após um tick para garantir reflow
   setTimeout(() => {
     window.print();
-  }, 300);
+
+    // 4. Restaurar após o print
+    setTimeout(() => {
+      document.querySelectorAll('[data-print-replace="true"]').forEach(div => div.remove());
+      document.querySelectorAll('[data-hidden-for-print="true"]').forEach(ta => {
+        ta.style.display = '';
+        delete ta.dataset.hiddenForPrint;
+      });
+    }, 1000);
+  }, 150);
 }
 
-window.addEventListener('beforeprint', () => {
-  expandAll();
-  autoExpandTextareas();
-  criarEspelhosDeTextoParaPrint();
-});
-
-window.addEventListener('afterprint', limparEspelhosDeTextoParaPrint);
-
-// Autoajuste enquanto digita em qualquer textarea.
-document.addEventListener('input', e => {
-  if (e.target && e.target.matches('textarea')) {
-    e.target.style.height = 'auto';
-    e.target.style.height = (e.target.scrollHeight + 8) + 'px';
-  }
-});
-
-/* ─── INIT ─── */
-renderAmbientes();
-updateFotoIndex();
-setViewMode();
-
-// Verificar se URL tem ?r=ID para carregar relatório salvo
-(function() {
-  const rid = new URLSearchParams(location.search).get('r');
-  if (rid) loadFromCloud(rid);
-})();
 </script>
 </body>
 </html>
