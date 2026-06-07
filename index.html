@@ -290,19 +290,32 @@ body { font-family: var(--body); background: var(--bg); color: var(--ink); font-
 }
 .foto-titulo:focus { border-bottom-color: var(--accent); }
 .foto-titulo::placeholder { color: var(--muted); font-weight: 400; }
+
+/* ── TEXTAREA: sem scroll, cresce com conteúdo ── */
+textarea,
+.foto-leg,
+.foto-intervencao,
+.sintese-box {
+  overflow: hidden !important;
+  resize: none !important;
+  height: auto;
+  min-height: 0 !important;
+  box-sizing: border-box;
+}
+
 .foto-leg {
   width: 100%; background: transparent; border: 1px solid var(--line2);
   border-radius: 6px; color: var(--ink2); font-family: var(--body);
-  font-size: 12px; padding: 8px 10px; resize: vertical; outline: none;
-  transition: .2s; min-height: 52px; line-height: 1.5;
+  font-size: 12px; padding: 8px 10px; outline: none;
+  transition: .2s; line-height: 1.5;
 }
 .foto-leg:focus { border-color: var(--accent); }
 .foto-leg::placeholder { color: var(--muted); }
 .foto-intervencao {
   width: 100%; background: rgba(207,255,4,0.04); border: 1px solid rgba(207,255,4,0.15);
   border-radius: 6px; color: var(--ink2); font-family: var(--body);
-  font-size: 12px; padding: 8px 10px; resize: vertical; outline: none;
-  transition: .2s; min-height: 42px; line-height: 1.5;
+  font-size: 12px; padding: 8px 10px; outline: none;
+  transition: .2s; line-height: 1.5;
 }
 .foto-intervencao:focus { border-color: var(--accent); }
 .foto-intervencao::placeholder { color: var(--muted); }
@@ -343,8 +356,8 @@ body { font-family: var(--body); background: var(--bg); color: var(--ink); font-
 .sintese-box {
   width: 100%; background: rgba(207,255,4,0.04); border: 1px solid rgba(207,255,4,0.18);
   border-radius: 8px; color: var(--ink2); font-family: var(--body);
-  font-size: 13px; padding: 14px 16px; resize: vertical; outline: none;
-  transition: .2s; min-height: 100px; line-height: 1.7;
+  font-size: 13px; padding: 14px 16px; outline: none;
+  transition: .2s; line-height: 1.7;
 }
 .sintese-box:focus { border-color: var(--accent); }
 .sintese-box::placeholder { color: var(--muted); }
@@ -440,18 +453,35 @@ body { font-family: var(--body); background: var(--bg); color: var(--ink); font-
   .add-item-btn { display: none !important; }
   .item-del-btn { display: none !important; }
   .no-print { display: none !important; }
+
   .foto-card { background: #fff; border: 1px solid #ccc; page-break-inside: avoid; }
   .foto-card-top { background: #f4f4f4; }
   .foto-card-num { color: #333; }
   .foto-card-del { display: none !important; }
   .foto-titulo { color: #000; border-bottom-color: #ccc; }
-  .foto-leg { border-color: #ccc; color: #333; background: #fff; }
-  .foto-intervencao { border-color: #bbb; color: #333; background: #f9f9f2; }
   .foto-field-lbl { color: #888; }
   .fotos-grid { gap: 12px; }
   .sintese-wrap { border-top-color: #ccc; }
   .sintese-label { color: #333; }
-  .sintese-box { border-color: #ccc; color: #333; background: #f9f9f2; }
+
+  /* ── TEXTAREA no print: sem scroll, altura total ── */
+  textarea,
+  .foto-leg,
+  .foto-intervencao,
+  .sintese-box {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: unset !important;
+    white-space: pre-wrap;
+    color: #333;
+    background: #f9f9f9;
+    border-color: #ccc !important;
+  }
+
+  .foto-card, .amb-card, .sintese-wrap, .foto-zone {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 
   .resumo-wrap { border-color: #ccc; background: #fff; }
   .resumo-table th { background: #000; color: #fff; }
@@ -467,10 +497,7 @@ body { font-family: var(--body); background: var(--bg); color: var(--ink); font-
 
 /* ══════════════════════════════════════════════
    MODO LEITURA × MODO EDIÇÃO
-   Por padrão: view mode. Edit mode via senha.
 ══════════════════════════════════════════════ */
-
-/* Esconder controles de edição no modo leitura */
 body:not(.edit-mode) .add-item-btn,
 body:not(.edit-mode) .item-del-btn,
 body:not(.edit-mode) .foto-card-del,
@@ -479,16 +506,15 @@ body:not(.edit-mode) .drop-zone,
 body:not(.edit-mode) #btn-expand,
 body:not(.edit-mode) #btn-collapse { display: none !important; }
 
-/* Textareas sem scrollbar no modo leitura — altura automática */
+/* ── Modo leitura: textarea sem scroll, altura automática ── */
 body:not(.edit-mode) textarea {
   overflow: hidden;
   resize: none;
+  height: auto;
+  min-height: 0 !important;
 }
 
-/* Em modo leitura, inputs da ficha ficam como texto */
 body:not(.edit-mode) .ficha-cell input { pointer-events: none; }
-
-/* Em modo leitura — tudo bloqueado */
 body:not(.edit-mode) [contenteditable="true"] { pointer-events: none; cursor: default; }
 body:not(.edit-mode) .item-txt               { pointer-events: none; }
 body:not(.edit-mode) .crit-sel               { pointer-events: none; }
@@ -520,7 +546,6 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
 }
 #lightbox-close:hover { opacity: 1; }
 
-/* Badge de modo */
 #mode-badge {
   font-family: var(--title); font-size: 10px; font-weight: 700;
   letter-spacing: 1px; padding: 5px 12px; border-radius: 20px;
@@ -561,7 +586,7 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
 .auth-cancel { color: var(--muted); font-size: 12px; margin-top: 16px; cursor: pointer; text-decoration: underline; display: block; }
 
 /* ══════════════════════════════════════════════
-   TOAST / NOTIFICAÇÕES
+   TOAST
 ══════════════════════════════════════════════ */
 #toast {
   position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
@@ -575,7 +600,6 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
 #toast.ok   { border-color: var(--accent); color: var(--accent); }
 #toast.err  { border-color: var(--critico); color: var(--critico); }
 
-/* ─── Indicador de upload na foto ─── */
 .foto-card.uploading { opacity: .7; }
 .foto-card.uploading .foto-card-num::after {
   content: ' · enviando…'; color: var(--muted); font-weight: 400;
@@ -613,7 +637,6 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
 .share-copy-btn:hover { background: #bdf000; }
 .share-close { color: var(--muted); font-size: 12px; cursor: pointer; text-decoration: underline; display: block; margin-top: 10px; }
 
-/* Salvar btn loading */
 #btn-save.saving { opacity: .6; pointer-events: none; }
 
 /* ══════════════════════════════════════════════
@@ -630,7 +653,6 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
 </head>
 <body>
 
-<!-- ══════════════ TOPBAR ══════════════ -->
 <div id="topbar">
   <div class="logo">GRECO <span>ARQUITETURA</span></div>
   <span id="mode-badge" class="view">Visualização</span>
@@ -639,11 +661,10 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
   <button class="tbtn" id="btn-resumo" onclick="generateSummary()">⟳ Resumo</button>
   <button class="tbtn" id="btn-save"   style="display:none" onclick="saveToCloud()">☁️ Salvar</button>
   <button class="tbtn" id="btn-export" style="display:none" onclick="exportReport()">💾 Exportar</button>
-  <button class="tbtn accent" onclick="window.print()">🖨 PDF</button>
+  <button class="tbtn accent" onclick="prepararPDF()">🖨 PDF</button>
   <button class="tbtn" id="btn-lock" onclick="toggleAuth()" title="Acesso editor">🔒</button>
 </div>
 
-<!-- MODAL LINK COMPARTILHÁVEL -->
 <div id="shareModal">
   <div class="share-box">
     <h3>✅ Relatório salvo!</h3>
@@ -656,16 +677,13 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
   </div>
 </div>
 
-<!-- TOAST -->
 <div id="toast"></div>
 
-<!-- LIGHTBOX -->
 <div id="lightbox" onclick="closeLightbox()">
   <button id="lightbox-close" onclick="closeLightbox()">✕</button>
   <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()">
 </div>
 
-<!-- MODAL DE SENHA -->
 <div id="authModal">
   <div class="auth-box">
     <h3>Modo Editor</h3>
@@ -678,10 +696,7 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
   </div>
 </div>
 
-<!-- ══════════════ RELATÓRIO ══════════════ -->
 <div id="report">
-
-  <!-- CAPA -->
   <div class="cover">
     <div class="cover-tag">Relatório Técnico · Locação</div>
     <h1>Vistoria de <span>Imóvel</span><br>para Locação</h1>
@@ -693,7 +708,6 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
     </div>
   </div>
 
-  <!-- SUMÁRIO -->
   <nav class="toc section">
     <div class="toc-label">Sumário</div>
     <ol>
@@ -707,14 +721,12 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
     </ol>
   </nav>
 
-  <!-- 1. OBJETIVO -->
   <div class="section" id="s1">
     <div class="sec-header"><span class="sec-num">01</span><h2 class="sec-title">Objetivo do <span>Relatório</span></h2></div>
     <p class="sec-text" contenteditable="true">O presente relatório tem como objetivo apresentar o levantamento técnico visual das condições aparentes do imóvel vistoriado, identificando manifestações patológicas, falhas funcionais, desgastes naturais, avarias construtivas, itens de manutenção corretiva e adequações recomendadas, visando a preparação do imóvel para futura locação.</p>
     <p class="sec-text" contenteditable="true">A vistoria foi realizada de forma predominantemente visual, considerando os aspectos arquitetônicos, construtivos, elétricos, hidráulicos, de marcenaria, revestimentos, esquadrias, iluminação e equipamentos aparentes, sem a realização de ensaios destrutivos ou testes invasivos.</p>
   </div>
 
-  <!-- 2. METODOLOGIA -->
   <div class="section" id="s2">
     <div class="sec-header"><span class="sec-num">02</span><h2 class="sec-title">Metodologia da <span>Vistoria</span></h2></div>
     <p class="sec-text">A inspeção técnica foi conduzida através de levantamento visual dos ambientes internos e externos do imóvel, considerando:</p>
@@ -730,7 +742,6 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
     <p class="sec-text" contenteditable="true">As observações aqui descritas poderão demandar inspeções complementares específicas para confirmação de causas, patologias ocultas ou condições técnicas não visíveis durante a vistoria.</p>
   </div>
 
-  <!-- 3. CRITÉRIOS -->
   <div class="section" id="s3">
     <div class="sec-header"><span class="sec-num">03</span><h2 class="sec-title">Critérios de <span>Classificação</span></h2></div>
     <div class="crit-grid">
@@ -740,31 +751,27 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
     </div>
   </div>
 
-  <!-- 4. LEVANTAMENTO -->
   <div class="section" id="s4">
     <div class="sec-header"><span class="sec-num">04</span><h2 class="sec-title">Levantamento Técnico por <span>Ambiente</span></h2></div>
     <div id="ambientes-root"></div>
   </div>
 
-  <!-- 5. REGISTRO FOTOGRÁFICO -->
   <div class="section" id="s5">
     <div class="sec-header"><span class="sec-num">05</span><h2 class="sec-title">Registro <span>Fotográfico</span></h2></div>
     <p class="sec-text">O registro fotográfico está distribuído em cada ambiente na seção 4, com legenda técnica por imagem. Abaixo o índice de fotos inseridas por ambiente.</p>
     <div id="foto-index"></div>
   </div>
 
-  <!-- 6. QUADRO RESUMO -->
   <div class="section" id="s6">
     <div class="sec-header"><span class="sec-num">06</span><h2 class="sec-title">Quadro Resumo das <span>Intervenções</span></h2></div>
     <div class="resumo-wrap">
       <table class="resumo-table">
         <thead><tr><th>Ambiente</th><th>Intervenção Técnica</th><th>Criticidade</th></tr></thead>
-        <tbody id="resumo-body"><tr><td class="resumo-empty" colspan="3">Clique em "⟳ Resumo" para gerar automaticamente com base nas classificações marcadas na seção 4.</td></tr></tbody>
+        <tbody id="resumo-body"><tr><td class="resumo-empty" colspan="3">Clique em "⟳ Resumo" para gerar automaticamente.</td></tr></tbody>
       </table>
     </div>
   </div>
 
-  <!-- 7. CONSIDERAÇÕES FINAIS -->
   <div class="section" id="s7">
     <div class="sec-header"><span class="sec-num">07</span><h2 class="sec-title">Considerações <span>Técnicas Finais</span></h2></div>
     <p class="sec-text" contenteditable="true">Com base na vistoria realizada, observou-se que o imóvel apresenta condições gerais compatíveis com ocupação, porém demandando intervenções corretivas, preventivas e estéticas previamente à disponibilização para locação.</p>
@@ -772,18 +779,15 @@ body:not(.edit-mode) .ficha-cell input       { pointer-events: none; cursor: def
     <p class="sec-text" contenteditable="true">Recomenda-se a execução das intervenções priorizando os itens classificados como críticos, seguidos dos itens moderados e estéticos, visando garantir adequado desempenho, valorização patrimonial e melhores condições de uso ao futuro locatário.</p>
   </div>
 
-  <!-- FOOTER -->
   <div class="rep-footer">
     <div class="rep-footer-empresa">GRECO <span>ARQUITETURA</span></div>
     <div class="rep-footer-slogan">Projetos e Acompanhamento Técnico de Obras</div>
   </div>
 </div>
 
-<!-- ══════════════ JAVASCRIPT ══════════════ -->
 <script>
 /* ══════════════════════════════════════════════
    DADOS INICIAIS DOS AMBIENTES
-   itens: { id, texto, crit }  — crit pode vir pré-definido
 ══════════════════════════════════════════════ */
 function mkItem(texto, crit) {
   return { id: 'i' + Math.random().toString(36).slice(2), texto, crit: crit || '' };
@@ -930,65 +934,88 @@ const AMBIENTES = [
   ]},
 ];
 
-/* ═══ SÍNTESE POR AMBIENTE ═══ */
 const SINTESE_DEFAULT = {
   'a01': `De forma geral, a varanda gourmet apresenta inconformidades relacionadas a acabamentos incompletos, falhas de marcenaria, frestas excessivas, instalações elétricas aparentes, ausência de acabamentos definitivos em pontos elétricos, desgaste de revestimentos, avarias em elementos pétreos e comprometimento localizado do piso de madeira.\n\nRecomenda-se a realização de ajustes de marcenaria, instalação definitiva dos acabamentos elétricos (espelhos, tampas cegas e fixações), ocultação de cabeamentos aparentes, execução de tapa-furos e acabamento de parafusos aparentes, substituição de peças de madeira comprometidas por estufamento ou fissuração, bem como recuperação ou substituição dos elementos pétreos danificados, visando compatibilizar o ambiente com o padrão estético, funcional e construtivo esperado.`,
-
   'a02': `O ambiente da piscina apresenta inconformidades predominantemente relacionadas à deterioração do deck de madeira, comprometimento do revestimento pétreo do entorno, falhas no revestimento vertical e sinais de desgaste dos componentes de apoio do sistema da piscina.\n\nDestacam-se como itens prioritários a substituição dos pisos quebrados do entorno da piscina e a avaliação do equipamento oxidado, por apresentarem potencial risco funcional e de segurança. Observa-se ainda necessidade de manutenção corretiva e estética do deck de madeira e recomposição localizada dos revestimentos pétreos.`,
-
   'a03': `O ambiente da varanda lateral direita apresenta inconformidades relacionadas principalmente à ausência de manutenção preventiva das esquadrias e seus elementos periféricos, com acúmulo de vegetação e resíduos em trilhos e canaletas, falhas de acabamento em luminárias e deterioração do mobiliário externo.\n\nDestacam-se como itens prioritários os indícios de umidade no forro junto à esquadria e a deterioração localizada do painel amadeirado, que indicam possível falha de vedação com risco de agravamento. Recomenda-se investigação técnica da origem da umidade antes da execução dos demais serviços de acabamento.`,
-
   'a04': `A sala de estar apresenta inconformidades concentradas no piso amadeirado, com desgaste acentuado do acabamento superficial, aberturas entre réguas e marcações aparentes. Destacam-se também o acúmulo severo de sujeira nas cortinas, a obstrução de trilhos de esquadria e fissuração capilar sobre esquadrias como itens que demandam atenção.\n\nRecomenda-se priorizar a recuperação do piso, limpeza técnica dos elementos têxteis, desobstrução dos trilhos e investigação das fissuras observadas, visando o restabelecimento do padrão estético e funcional do ambiente.`,
 };
 
-/* ═══ ESTADO MUTÁVEL ═══ */
-// itensState[ambId] = [{id, texto, crit}]  — cópia mutável dos AMBIENTES
 const itensState   = {};
 const fotosState   = {};
 const sinteseState = {};
 let globalCounter  = 0;
 
 AMBIENTES.forEach(a => {
-  itensState[a.id]   = a.itens.map(it => ({ ...it }));  // cópia mutável
+  itensState[a.id]   = a.itens.map(it => ({ ...it }));
   fotosState[a.id]   = [];
   sinteseState[a.id] = SINTESE_DEFAULT[a.id] || '';
 });
 
-/* ═══ RENDER AMBIENTES ═══ */
+/* ══════════════════════════════════════════════
+   AUTO-EXPAND TEXTAREAS
+   Sem scroll, sem altura fixa — cresce com conteúdo.
+   Chamado no load, no beforeprint e no setViewMode.
+══════════════════════════════════════════════ */
+function autoExpandTextarea(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function autoExpandTextareas() {
+  requestAnimationFrame(function() {
+    document.querySelectorAll('textarea').forEach(function(ta) {
+      autoExpandTextarea(ta);
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════
+   PREPARAR PDF
+   1. Expande todos os ambientes
+   2. Expande todas as textareas
+   3. Abre impressão após reflow
+══════════════════════════════════════════════ */
+function prepararPDF() {
+  expandAll();
+  autoExpandTextareas();
+  setTimeout(function() { window.print(); }, 250);
+}
+
+// Garante expansão também no Ctrl+P direto
+window.addEventListener('beforeprint', function() {
+  expandAll();
+  autoExpandTextareas();
+});
+
+/* ══════════════════════════════════════════════
+   RENDER AMBIENTES
+══════════════════════════════════════════════ */
 function renderAmbientes() {
   const root = document.getElementById('ambientes-root');
   root.innerHTML = '';
   AMBIENTES.forEach(amb => {
     const wrap = document.createElement('div');
     wrap.className = 'amb-wrap';
-
     const card = document.createElement('div');
     card.className = 'amb-card closed';
     card.id = 'card-' + amb.id;
-
     const hdr = document.createElement('div');
     hdr.className = 'amb-hdr';
     hdr.innerHTML = `<span class="amb-num">${amb.num}</span><span class="amb-name">${amb.nome}</span><span class="amb-chevron">▾</span>`;
     hdr.addEventListener('click', () => toggleAmb(amb.id));
-
     const body = document.createElement('div');
     body.className = 'amb-body';
     body.id = 'body-' + amb.id;
-
     const ul = document.createElement('ul');
     ul.className = 'itens-list';
     ul.id = 'ul-' + amb.id;
-
     renderItens(amb.id, ul);
-
-    // Botão "+ Adicionar item"
     const addItemBtn = document.createElement('button');
     addItemBtn.className = 'add-item-btn no-print';
     addItemBtn.textContent = '+ Adicionar item';
     addItemBtn.addEventListener('click', () => adicionarItem(amb.id));
-
     const fotoZone = buildFotoZone(amb);
-
     body.append(ul, addItemBtn, fotoZone);
     card.append(hdr, body);
     wrap.appendChild(card);
@@ -996,7 +1023,6 @@ function renderAmbientes() {
   });
 }
 
-/* ─── Renderizar lista de itens de um ambiente ─── */
 function renderItens(ambId, ulEl) {
   const ul = ulEl || document.getElementById('ul-' + ambId);
   if (!ul) return;
@@ -1004,21 +1030,15 @@ function renderItens(ambId, ulEl) {
   itensState[ambId].forEach((item, idx) => {
     const li = document.createElement('li');
     li.className = 'item-row';
-
-    // Número sequencial
     const dot = document.createElement('div');
     dot.className = 'item-dot';
     dot.textContent = String(idx + 1).padStart(2, '0');
-
-    // Texto editável
     const span = document.createElement('div');
     span.className = 'item-txt';
     span.contentEditable = 'true';
     span.textContent = item.texto;
     span.addEventListener('blur', e => { item.texto = e.target.textContent.trim(); });
     span.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); span.blur(); } });
-
-    // Select criticidade
     const sel = document.createElement('select');
     sel.className = 'crit-sel' + (item.crit === 'critico' ? ' vc' : item.crit === 'moderado' ? ' vm' : item.crit === 'estetico' ? ' ve' : '');
     sel.innerHTML = `
@@ -1031,14 +1051,11 @@ function renderItens(ambId, ulEl) {
       item.crit = sel.value;
       sel.className = 'crit-sel' + (sel.value === 'critico' ? ' vc' : sel.value === 'moderado' ? ' vm' : sel.value === 'estetico' ? ' ve' : '');
     });
-
-    // Botão remover item
     const del = document.createElement('button');
     del.className = 'item-del-btn no-print';
     del.title = 'Remover item';
     del.textContent = '✕';
     del.addEventListener('click', () => removerItem(ambId, item.id));
-
     li.append(dot, span, sel, del);
     ul.appendChild(li);
   });
@@ -1048,7 +1065,6 @@ function adicionarItem(ambId) {
   const novoItem = mkItem('Novo item — clique para editar');
   itensState[ambId].push(novoItem);
   renderItens(ambId);
-  // Focar no novo item
   const ul = document.getElementById('ul-' + ambId);
   const lastRow = ul.lastElementChild;
   if (lastRow) {
@@ -1062,22 +1078,20 @@ function removerItem(ambId, itemId) {
   renderItens(ambId);
 }
 
-/* ─── ZONA DE FOTOS ─── */
+/* ══════════════════════════════════════════════
+   ZONA DE FOTOS
+══════════════════════════════════════════════ */
 function buildFotoZone(amb) {
   const zone = document.createElement('div');
   zone.className = 'foto-zone';
-
   const zoneHdr = document.createElement('div');
   zoneHdr.className = 'foto-zone-hdr';
-
   const lbl = document.createElement('span');
   lbl.className = 'foto-zone-label';
   lbl.textContent = 'Registro Fotográfico';
-
   const addLabel = document.createElement('label');
   addLabel.className = 'foto-add-btn';
   addLabel.innerHTML = '+ Fotos';
-
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
   fileInput.className = 'foto-file-input';
@@ -1085,9 +1099,7 @@ function buildFotoZone(amb) {
   fileInput.multiple = true;
   fileInput.addEventListener('change', e => handleFiles(e.target.files, amb.id));
   addLabel.appendChild(fileInput);
-
   zoneHdr.append(lbl, addLabel);
-
   const drop = document.createElement('div');
   drop.className = 'drop-zone';
   drop.id = 'drop-' + amb.id;
@@ -1096,27 +1108,25 @@ function buildFotoZone(amb) {
   drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag-over'); });
   drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
   drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('drag-over'); handleFiles(e.dataTransfer.files, amb.id); });
-
   const grid = document.createElement('div');
   grid.className = 'fotos-grid';
   grid.id = 'grid-' + amb.id;
-
-  // Síntese Técnica
   const sinteseWrap = document.createElement('div');
   sinteseWrap.className = 'sintese-wrap';
   sinteseWrap.innerHTML = `<span class="sintese-label">Síntese Técnica — ${amb.nome}</span>`;
   const sinteseBox = document.createElement('textarea');
   sinteseBox.className = 'sintese-box';
-  sinteseBox.placeholder = 'Descreva a síntese das inconformidades observadas no ambiente e as recomendações gerais de intervenção…';
+  sinteseBox.placeholder = 'Descreva a síntese das inconformidades observadas no ambiente…';
   sinteseBox.value = sinteseState[amb.id] || '';
-  sinteseBox.addEventListener('input', e => { sinteseState[amb.id] = e.target.value; });
+  sinteseBox.addEventListener('input', e => {
+    sinteseState[amb.id] = e.target.value;
+    autoExpandTextarea(e.target);
+  });
   sinteseWrap.appendChild(sinteseBox);
-
   zone.append(zoneHdr, drop, grid, sinteseWrap);
   return zone;
 }
 
-/* ─── PROCESSAR ARQUIVOS ─── */
 function handleFiles(files, ambId) {
   Array.from(files).forEach(file => {
     if (!file.type.startsWith('image/')) return;
@@ -1174,7 +1184,6 @@ function renderFotos(ambId) {
     const num = String(foto.globalNum).padStart(2, '0');
     const card = document.createElement('div');
     card.className = 'foto-card';
-
     const top = document.createElement('div');
     top.className = 'foto-card-top';
     top.innerHTML = `<span class="foto-card-num">FOTO ${num}</span>`;
@@ -1184,7 +1193,6 @@ function renderFotos(ambId) {
     delBtn.textContent = '✕';
     delBtn.addEventListener('click', () => removeFoto(ambId, foto.id));
     top.appendChild(delBtn);
-
     const img = document.createElement('img');
     img.src = foto.src;
     img.alt = 'Foto ' + num;
@@ -1192,11 +1200,8 @@ function renderFotos(ambId) {
     img.style.cursor = 'zoom-in';
     img.title = 'Clique para ampliar';
     img.addEventListener('click', () => openLightbox(foto.src));
-
     const foot = document.createElement('div');
     foot.className = 'foto-card-foot';
-
-    // Título
     const lblTit = document.createElement('label');
     lblTit.className = 'foto-field-lbl';
     lblTit.textContent = 'Título';
@@ -1206,18 +1211,17 @@ function renderFotos(ambId) {
     inpTit.placeholder = 'Ex: Peitoril da esquadria com desgaste no revestimento';
     inpTit.value = foto.titulo;
     inpTit.addEventListener('input', e => { foto.titulo = e.target.value; });
-
-    // Observação
     const lblObs = document.createElement('label');
     lblObs.className = 'foto-field-lbl';
     lblObs.textContent = 'Observação técnica';
     const taObs = document.createElement('textarea');
     taObs.className = 'foto-leg';
-    taObs.placeholder = 'Descreva a ocorrência identificada e possíveis causas aparentes…';
+    taObs.placeholder = 'Descreva a ocorrência identificada…';
     taObs.value = foto.observacao;
-    taObs.addEventListener('input', e => { foto.observacao = e.target.value; });
-
-    // Intervenção
+    taObs.addEventListener('input', e => {
+      foto.observacao = e.target.value;
+      autoExpandTextarea(e.target);
+    });
     const lblInt = document.createElement('label');
     lblInt.className = 'foto-field-lbl';
     lblInt.style.marginTop = '2px';
@@ -1226,15 +1230,18 @@ function renderFotos(ambId) {
     taInt.className = 'foto-intervencao';
     taInt.placeholder = 'Descreva a intervenção técnica recomendada…';
     taInt.value = foto.intervencao;
-    taInt.addEventListener('input', e => { foto.intervencao = e.target.value; });
-
+    taInt.addEventListener('input', e => {
+      foto.intervencao = e.target.value;
+      autoExpandTextarea(e.target);
+    });
     foot.append(lblTit, inpTit, lblObs, taObs, lblInt, taInt);
     card.append(top, img, foot);
     grid.appendChild(card);
   });
+  // Expandir novas textareas após render
+  autoExpandTextareas();
 }
 
-/* ─── ÍNDICE DE FOTOS (seção 5) ─── */
 function updateFotoIndex() {
   const el = document.getElementById('foto-index');
   let html = '';
@@ -1244,28 +1251,24 @@ function updateFotoIndex() {
     if (fotos.length === 0) return;
     total += fotos.length;
     const nums = fotos.map(f => String(f.globalNum).padStart(2,'0')).join(', ');
-    html += `
-      <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--line)">
-        <span style="font-family:var(--title);font-size:10px;color:var(--accent);font-weight:700;min-width:36px">${amb.num}</span>
-        <span style="flex:1;color:var(--ink2);font-size:13px">${amb.nome}</span>
-        <span style="font-family:var(--title);font-size:11px;color:var(--muted)">${fotos.length} foto${fotos.length>1?'s':''} · Foto ${nums}</span>
-      </div>`;
+    html += `<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--line)">
+      <span style="font-family:var(--title);font-size:10px;color:var(--accent);font-weight:700;min-width:36px">${amb.num}</span>
+      <span style="flex:1;color:var(--ink2);font-size:13px">${amb.nome}</span>
+      <span style="font-family:var(--title);font-size:11px;color:var(--muted)">${fotos.length} foto${fotos.length>1?'s':''} · Foto ${nums}</span>
+    </div>`;
   });
-  if (total === 0) html = '<p class="sec-text" style="color:var(--muted)">Nenhuma foto inserida ainda. Adicione fotos em cada ambiente na seção 4.</p>';
+  if (total === 0) html = '<p class="sec-text" style="color:var(--muted)">Nenhuma foto inserida ainda.</p>';
   el.innerHTML = html;
 }
 
-/* ─── QUADRO RESUMO ─── */
 function generateSummary() {
   const tbody = document.getElementById('resumo-body');
   tbody.innerHTML = '';
-
   const grupos = [
     { crit: 'critico',  label: 'Crítico',  bc: 'rc', itens: [] },
     { crit: 'moderado', label: 'Moderado', bc: 'rm', itens: [] },
     { crit: 'estetico', label: 'Estético', bc: 're', itens: [] },
   ];
-
   AMBIENTES.forEach(amb => {
     (itensState[amb.id] || []).forEach(item => {
       if (!item.crit) return;
@@ -1273,50 +1276,26 @@ function generateSummary() {
       if (grupo) grupo.itens.push({ amb: amb.nome, texto: item.texto });
     });
   });
-
   let total = 0;
   grupos.forEach(grupo => {
     if (grupo.itens.length === 0) return;
     total += grupo.itens.length;
-
-    // Linha de cabeçalho do grupo
     const trHead = document.createElement('tr');
-    trHead.innerHTML = `
-      <td colspan="3" style="
-        background: var(--surface2);
-        padding: 10px 18px;
-        font-family: var(--title);
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        border-bottom: 1px solid var(--line2);
-      ">
-        <span class="r-badge ${grupo.bc}">${grupo.label}</span>
-        <span style="color:var(--muted);margin-left:10px">${grupo.itens.length} item${grupo.itens.length > 1 ? 's' : ''}</span>
-      </td>`;
+    trHead.innerHTML = `<td colspan="3" style="background:var(--surface2);padding:10px 18px;font-family:var(--title);font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;border-bottom:1px solid var(--line2)"><span class="r-badge ${grupo.bc}">${grupo.label}</span><span style="color:var(--muted);margin-left:10px">${grupo.itens.length} item${grupo.itens.length > 1 ? 's' : ''}</span></td>`;
     tbody.appendChild(trHead);
-
     grupo.itens.forEach(it => {
       const tr = document.createElement('tr');
       tr.innerHTML = `<td>${it.amb}</td><td>${it.texto}</td><td><span class="r-badge ${grupo.bc}">${grupo.label}</span></td>`;
       tbody.appendChild(tr);
     });
   });
-
-  if (total === 0) {
-    tbody.innerHTML = '<tr><td class="resumo-empty" colspan="3">Nenhum item classificado. Classifique os itens em cada ambiente e clique em "⟳ Resumo".</td></tr>';
-  }
+  if (total === 0) tbody.innerHTML = '<tr><td class="resumo-empty" colspan="3">Nenhum item classificado.</td></tr>';
 }
 
-/* ─── TOGGLE AMBIENTE ─── */
-function toggleAmb(id) {
-  document.getElementById('card-' + id).classList.toggle('closed');
-}
+function toggleAmb(id) { document.getElementById('card-' + id).classList.toggle('closed'); }
 function expandAll()   { AMBIENTES.forEach(a => document.getElementById('card-'+a.id).classList.remove('closed')); }
 function collapseAll() { AMBIENTES.forEach(a => document.getElementById('card-'+a.id).classList.add('closed')); }
 
-/* ─── LIGHTBOX ─── */
 function openLightbox(src) {
   document.getElementById('lightbox-img').src = src;
   document.getElementById('lightbox').classList.add('open');
@@ -1328,43 +1307,31 @@ function closeLightbox() {
   document.removeEventListener('keydown', onLightboxKey);
 }
 function onLightboxKey(e) { if (e.key === 'Escape') closeLightbox(); }
-
-/* ─── SCROLL ─── */
 function goTo(sel) {
   const el = document.querySelector(sel);
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-/* ════════════════════════════════════════════
-   AUTENTICAÇÃO E MODOS
-   Senha padrão: greco2026
-   Para alterar: mude a constante SENHA abaixo
-════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════
+   AUTENTICAÇÃO
+══════════════════════════════════════════════ */
 const SENHA = 'greco2026';
 let editMode = false;
 
 function toggleAuth() {
-  if (editMode) {
-    // Sair do modo editor
-    setViewMode();
-  } else {
+  if (editMode) { setViewMode(); }
+  else {
     document.getElementById('authModal').classList.add('open');
     document.getElementById('authInput').value = '';
     document.getElementById('authError').style.display = 'none';
     setTimeout(() => document.getElementById('authInput').focus(), 100);
   }
 }
-
-function closeAuth() {
-  document.getElementById('authModal').classList.remove('open');
-}
-
+function closeAuth() { document.getElementById('authModal').classList.remove('open'); }
 function doAuth() {
   const val = document.getElementById('authInput').value;
-  if (val === SENHA) {
-    closeAuth();
-    setEditMode();
-  } else {
+  if (val === SENHA) { closeAuth(); setEditMode(); }
+  else {
     document.getElementById('authError').style.display = 'block';
     document.getElementById('authInput').value = '';
     document.getElementById('authInput').focus();
@@ -1379,20 +1346,10 @@ function setEditMode() {
   document.getElementById('btn-lock').textContent = '🔓';
   document.getElementById('btn-lock').title = 'Sair do modo editor';
   document.getElementById('btn-export').style.display = '';
-  // Reativar tudo
+  document.getElementById('btn-save').style.display = '';
   document.querySelectorAll('[contenteditable]').forEach(el => el.setAttribute('contenteditable','true'));
   document.querySelectorAll('.foto-titulo, .foto-leg, .foto-intervencao, .sintese-box, .ficha-cell input').forEach(el => el.readOnly = false);
   document.querySelectorAll('.crit-sel').forEach(el => el.disabled = false);
-}
-
-function autoExpandTextareas() {
-  // Espera um tick para garantir que o DOM está pronto
-  requestAnimationFrame(() => {
-    document.querySelectorAll('textarea').forEach(ta => {
-      ta.style.height = 'auto';
-      ta.style.height = (ta.scrollHeight + 2) + 'px';
-    });
-  });
 }
 
 function setViewMode() {
@@ -1403,20 +1360,17 @@ function setViewMode() {
   document.getElementById('btn-lock').textContent = '🔒';
   document.getElementById('btn-lock').title = 'Entrar no modo editor';
   document.getElementById('btn-export').style.display = 'none';
-  // Desativar contenteditable
+  document.getElementById('btn-save').style.display = 'none';
   document.querySelectorAll('[contenteditable]').forEach(el => el.setAttribute('contenteditable','false'));
   document.querySelectorAll('.foto-titulo, .foto-leg, .foto-intervencao, .sintese-box, .ficha-cell input').forEach(el => el.readOnly = true);
   document.querySelectorAll('.crit-sel').forEach(el => el.disabled = true);
   autoExpandTextareas();
 }
 
-/* ════════════════════════════════════════════
+/* ══════════════════════════════════════════════
    EXPORTAR RELATÓRIO
-   Gera HTML completo com fotos embutidas,
-   sem senha, bloqueado em modo leitura.
-════════════════════════════════════════════ */
+══════════════════════════════════════════════ */
 function exportReport() {
-  // Serializar estado completo em JSON
   const state = {
     ficha: {
       cliente: document.getElementById('fc').value,
@@ -1424,41 +1378,27 @@ function exportReport() {
       loc:     document.getElementById('fl').value,
       data:    document.getElementById('fd').value,
     },
-    itens:    {},
-    fotos:    {},
-    sintese:  {},
-    textos:   [],
+    itens: {}, fotos: {}, sintese: {}, textos: [],
   };
-
   AMBIENTES.forEach(a => {
     state.itens[a.id]   = itensState[a.id];
     state.fotos[a.id]   = fotosState[a.id];
     state.sintese[a.id] = sinteseState[a.id];
   });
-
-  // Capturar textos editáveis das seções (objetivo, metodologia, considerações)
   document.querySelectorAll('.sec-text[contenteditable]').forEach((el, i) => {
     state.textos[i] = el.innerHTML;
   });
-
-  // Serializar para JSON embutido no HTML exportado
   const stateJSON = JSON.stringify(state).replace(/<\/script>/gi, '<\\/script>');
-
-  // Construir o HTML exportado como página standalone (view-only)
   const exportedHTML = buildExportHTML(stateJSON);
-
   const blob = new Blob([exportedHTML], { type: 'text/html;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-
-  // Nome do arquivo com data
   const hoje = new Date();
   const dd = String(hoje.getDate()).padStart(2,'0');
   const mm = String(hoje.getMonth()+1).padStart(2,'0');
   const aa = hoje.getFullYear();
-  const cliente = (document.getElementById('fc').value || 'Relatório').replace(/[^a-zA-Z0-9]/g,'_');
+  const cliente = (document.getElementById('fc').value || 'Relatorio').replace(/[^a-zA-Z0-9]/g,'_');
   a.download = `Vistoria_${cliente}_${dd}${mm}${aa}.html`;
-
   a.href = url;
   document.body.appendChild(a);
   a.click();
@@ -1467,9 +1407,7 @@ function exportReport() {
 }
 
 function buildExportHTML(stateJSON) {
-  // Pegar os estilos da página atual
   const styles = document.querySelector('style').outerHTML;
-
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1481,7 +1419,6 @@ function buildExportHTML(stateJSON) {
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;800&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
 ${styles}
 <style>
-/* Exportado — sempre view mode */
 .add-item-btn, .item-del-btn, .foto-add-btn, .drop-zone,
 #btn-lock, #btn-export, #btn-resumo, #btn-expand, #btn-collapse,
 #authModal { display: none !important; }
@@ -1495,7 +1432,7 @@ ${styles}
 <body>
 <div id="topbar">
   <div class="logo">GRECO <span>ARQUITETURA</span></div>
-  <button class="tbtn accent" onclick="window.print()">🖨 Imprimir / PDF</button>
+  <button class="tbtn accent" onclick="prepararPDF()">🖨 Imprimir / PDF</button>
 </div>
 <div id="report">
   <div class="cover">
@@ -1503,177 +1440,93 @@ ${styles}
     <h1>Vistoria de <span>Imóvel</span><br>para Locação</h1>
     <div class="ficha" id="ficha-export"></div>
   </div>
-  <nav class="toc section">
-    <div class="toc-label">Sumário</div>
-    <ol>
-      <li>Objetivo do Relatório</li>
-      <li>Metodologia da Vistoria</li>
-      <li>Critérios de Classificação das Intervenções</li>
-      <li>Levantamento Técnico por Ambiente</li>
-      <li>Registro Fotográfico</li>
-      <li>Quadro Resumo das Intervenções</li>
-      <li>Considerações Técnicas Finais</li>
-    </ol>
-  </nav>
-  <div class="section" id="s1">
-    <div class="sec-header"><span class="sec-num">01</span><h2 class="sec-title">Objetivo do <span>Relatório</span></h2></div>
-    <div id="textos-export-s1"></div>
-  </div>
-  <div class="section" id="s2">
-    <div class="sec-header"><span class="sec-num">02</span><h2 class="sec-title">Metodologia da <span>Vistoria</span></h2></div>
+  <nav class="toc section"><div class="toc-label">Sumário</div><ol>
+    <li>Objetivo do Relatório</li><li>Metodologia da Vistoria</li>
+    <li>Critérios de Classificação das Intervenções</li><li>Levantamento Técnico por Ambiente</li>
+    <li>Registro Fotográfico</li><li>Quadro Resumo das Intervenções</li><li>Considerações Técnicas Finais</li>
+  </ol></nav>
+  <div class="section" id="s1"><div class="sec-header"><span class="sec-num">01</span><h2 class="sec-title">Objetivo do <span>Relatório</span></h2></div><div id="textos-export-s1"></div></div>
+  <div class="section" id="s2"><div class="sec-header"><span class="sec-num">02</span><h2 class="sec-title">Metodologia da <span>Vistoria</span></h2></div>
     <p class="sec-text">A inspeção técnica foi conduzida através de levantamento visual dos ambientes internos e externos do imóvel, considerando:</p>
-    <ul class="meto-list">
-      <li>Integridade dos acabamentos;</li>
-      <li>Condições aparentes das instalações elétricas e hidráulicas;</li>
-      <li>Estado de conservação dos revestimentos;</li>
-      <li>Condições de marcenaria fixa;</li>
-      <li>Avaliação visual de esquadrias, ferragens e vidros;</li>
-      <li>Verificação de sinais aparentes de infiltração, umidade e patologias construtivas;</li>
-      <li>Estado geral dos elementos de mobiliário fixo e áreas de lazer.</li>
-    </ul>
-    <div id="textos-export-s2"></div>
-  </div>
-  <div class="section" id="s3">
-    <div class="sec-header"><span class="sec-num">03</span><h2 class="sec-title">Critérios de <span>Classificação</span></h2></div>
-    <div class="crit-grid">
-      <div class="crit-card cc"><div class="crit-tipo">Crítico</div><p>Itens relacionados à segurança, funcionalidade, infiltrações, elétrica, estanqueidade ou risco de agravamento patológico.</p></div>
-      <div class="crit-card cm"><div class="crit-tipo">Moderado</div><p>Itens de manutenção corretiva e preventiva que afetam desempenho, conservação e funcionalidade do imóvel.</p></div>
-      <div class="crit-card ce"><div class="crit-tipo">Estético</div><p>Itens de acabamento, desgaste visual e atualização estética sem comprometimento funcional imediato.</p></div>
-    </div>
-  </div>
-  <div class="section" id="s4">
-    <div class="sec-header"><span class="sec-num">04</span><h2 class="sec-title">Levantamento Técnico por <span>Ambiente</span></h2></div>
-    <div id="ambientes-export"></div>
-  </div>
-  <div class="section" id="s5">
-    <div class="sec-header"><span class="sec-num">05</span><h2 class="sec-title">Registro <span>Fotográfico</span></h2></div>
-    <p class="sec-text">Conjunto de imagens organizadas por ambiente, com legenda técnica e indicação da anomalia observada.</p>
-    <div id="foto-index-export"></div>
-  </div>
-  <div class="section" id="s6">
-    <div class="sec-header"><span class="sec-num">06</span><h2 class="sec-title">Quadro Resumo das <span>Intervenções</span></h2></div>
-    <div class="resumo-wrap">
-      <table class="resumo-table">
-        <thead><tr><th>Ambiente</th><th>Intervenção Técnica</th><th>Criticidade</th></tr></thead>
-        <tbody id="resumo-export"></tbody>
-      </table>
-    </div>
-  </div>
-  <div class="section" id="s7">
-    <div class="sec-header"><span class="sec-num">07</span><h2 class="sec-title">Considerações <span>Técnicas Finais</span></h2></div>
-    <div id="textos-export-s7"></div>
-  </div>
-  <div class="rep-footer">
-    <div class="rep-footer-empresa">GRECO <span>ARQUITETURA</span></div>
-    <div class="rep-footer-slogan">Projetos e Acompanhamento Técnico de Obras</div>
-  </div>
+    <ul class="meto-list"><li>Integridade dos acabamentos;</li><li>Condições aparentes das instalações elétricas e hidráulicas;</li><li>Estado de conservação dos revestimentos;</li><li>Condições de marcenaria fixa;</li><li>Avaliação visual de esquadrias, ferragens e vidros;</li><li>Verificação de sinais aparentes de infiltração, umidade e patologias construtivas;</li><li>Estado geral dos elementos de mobiliário fixo e áreas de lazer.</li></ul>
+    <div id="textos-export-s2"></div></div>
+  <div class="section" id="s3"><div class="sec-header"><span class="sec-num">03</span><h2 class="sec-title">Critérios de <span>Classificação</span></h2></div>
+    <div class="crit-grid"><div class="crit-card cc"><div class="crit-tipo">Crítico</div><p>Itens relacionados à segurança, funcionalidade, infiltrações, elétrica, estanqueidade ou risco de agravamento patológico.</p></div><div class="crit-card cm"><div class="crit-tipo">Moderado</div><p>Itens de manutenção corretiva e preventiva que afetam desempenho, conservação e funcionalidade do imóvel.</p></div><div class="crit-card ce"><div class="crit-tipo">Estético</div><p>Itens de acabamento, desgaste visual e atualização estética sem comprometimento funcional imediato.</p></div></div></div>
+  <div class="section" id="s4"><div class="sec-header"><span class="sec-num">04</span><h2 class="sec-title">Levantamento Técnico por <span>Ambiente</span></h2></div><div id="ambientes-export"></div></div>
+  <div class="section" id="s5"><div class="sec-header"><span class="sec-num">05</span><h2 class="sec-title">Registro <span>Fotográfico</span></h2></div><p class="sec-text">Conjunto de imagens organizadas por ambiente, com legenda técnica e indicação da anomalia observada.</p><div id="foto-index-export"></div></div>
+  <div class="section" id="s6"><div class="sec-header"><span class="sec-num">06</span><h2 class="sec-title">Quadro Resumo das <span>Intervenções</span></h2></div><div class="resumo-wrap"><table class="resumo-table"><thead><tr><th>Ambiente</th><th>Intervenção Técnica</th><th>Criticidade</th></tr></thead><tbody id="resumo-export"></tbody></table></div></div>
+  <div class="section" id="s7"><div class="sec-header"><span class="sec-num">07</span><h2 class="sec-title">Considerações <span>Técnicas Finais</span></h2></div><div id="textos-export-s7"></div></div>
+  <div class="rep-footer"><div class="rep-footer-empresa">GRECO <span>ARQUITETURA</span></div><div class="rep-footer-slogan">Projetos e Acompanhamento Técnico de Obras</div></div>
 </div>
 <script>
 const _STATE = ${stateJSON};
 const _AMBIENTES_EXPORT = ${JSON.stringify(AMBIENTES.map(a => ({id:a.id, num:a.num, nome:a.nome})))};
-
-// Ficha
-const fc = _STATE.ficha;
-document.getElementById('ficha-export').innerHTML =
-  cell('Cliente', fc.cliente) + cell('Empreendimento', fc.emp) + cell('Localização', fc.loc) + cell('Data da Vistoria', fc.data);
-function cell(lbl, val) {
-  return '<div class="ficha-cell"><label>'+lbl+'</label><input type="text" value="'+esc(val)+'" readonly></div>';
-}
+function cell(lbl, val) { return '<div class="ficha-cell"><label>'+lbl+'</label><input type="text" value="'+esc(val)+'" readonly></div>'; }
 function esc(s) { return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
-
-// Textos editáveis
+const fc = _STATE.ficha;
+document.getElementById('ficha-export').innerHTML = cell('Cliente',fc.cliente)+cell('Empreendimento',fc.emp)+cell('Localização',fc.loc)+cell('Data da Vistoria',fc.data);
 const t = _STATE.textos || [];
-document.getElementById('textos-export-s1').innerHTML =
-  '<p class="sec-text">'+(t[0]||'')+'</p><p class="sec-text">'+(t[1]||'')+'</p>';
-document.getElementById('textos-export-s2').innerHTML =
-  '<p class="sec-text">'+(t[2]||'')+'</p>';
-document.getElementById('textos-export-s7').innerHTML =
-  '<p class="sec-text">'+(t[3]||'')+'</p><p class="sec-text">'+(t[4]||'')+'</p><p class="sec-text">'+(t[5]||'')+'</p>';
-
-// Ambientes
+document.getElementById('textos-export-s1').innerHTML = '<p class="sec-text">'+(t[0]||'')+'</p><p class="sec-text">'+(t[1]||'')+'</p>';
+document.getElementById('textos-export-s2').innerHTML = '<p class="sec-text">'+(t[2]||'')+'</p>';
+document.getElementById('textos-export-s7').innerHTML = '<p class="sec-text">'+(t[3]||'')+'</p><p class="sec-text">'+(t[4]||'')+'</p><p class="sec-text">'+(t[5]||'')+'</p>';
 const ambRoot = document.getElementById('ambientes-export');
 _AMBIENTES_EXPORT.forEach(amb => {
-  const itens = _STATE.itens[amb.id] || [];
-  const fotos = _STATE.fotos[amb.id] || [];
-  const sintese = _STATE.sintese[amb.id] || '';
-
-  let itensHTML = itens.map((it, i) => {
-    const cls = it.crit === 'critico' ? ' vc' : it.crit === 'moderado' ? ' vm' : it.crit === 'estetico' ? ' ve' : '';
-    const lbl = it.crit === 'critico' ? 'Crítico' : it.crit === 'moderado' ? 'Moderado' : it.crit === 'estetico' ? 'Estético' : '—';
-    return '<li class="item-row"><div class="item-dot">'+String(i+1).padStart(2,'0')+'</div>'
-      +'<div class="item-txt">'+esc(it.texto)+'</div>'
-      +'<select class="crit-sel'+cls+'" disabled><option selected>'+lbl+'</option></select></li>';
+  const itens = _STATE.itens[amb.id]||[], fotos = _STATE.fotos[amb.id]||[], sintese = _STATE.sintese[amb.id]||'';
+  let itensHTML = itens.map((it,i) => {
+    const cls = it.crit==='critico'?' vc':it.crit==='moderado'?' vm':it.crit==='estetico'?' ve':'';
+    const lbl = it.crit==='critico'?'Crítico':it.crit==='moderado'?'Moderado':it.crit==='estetico'?'Estético':'—';
+    return '<li class="item-row"><div class="item-dot">'+String(i+1).padStart(2,'0')+'</div><div class="item-txt">'+esc(it.texto)+'</div><select class="crit-sel'+cls+'" disabled><option selected>'+lbl+'</option></select></li>';
   }).join('');
-
   let fotosHTML = '';
   fotos.forEach(f => {
     const num = String(f.globalNum).padStart(2,'0');
-    fotosHTML += '<div class="foto-card">'
-      +'<div class="foto-card-top"><span class="foto-card-num">FOTO '+num+'</span></div>'
-      +'<img src="'+f.src+'" alt="Foto '+num+'" loading="lazy">'
-      +'<div class="foto-card-foot">'
-      +(f.titulo ? '<label class="foto-field-lbl">Título</label><input type="text" class="foto-titulo" value="'+esc(f.titulo)+'" readonly>' : '')
-      +(f.observacao ? '<label class="foto-field-lbl">Observação técnica</label><textarea class="foto-leg" readonly>'+f.observacao+'</textarea>' : '')
-      +(f.intervencao ? '<label class="foto-field-lbl">Intervenção recomendada</label><textarea class="foto-intervencao" readonly>'+f.intervencao+'</textarea>' : '')
+    fotosHTML += '<div class="foto-card"><div class="foto-card-top"><span class="foto-card-num">FOTO '+num+'</span></div><img src="'+f.src+'" alt="Foto '+num+'" loading="lazy"><div class="foto-card-foot">'
+      +(f.titulo?'<label class="foto-field-lbl">Título</label><input type="text" class="foto-titulo" value="'+esc(f.titulo)+'" readonly>':'')
+      +(f.observacao?'<label class="foto-field-lbl">Observação técnica</label><textarea class="foto-leg" readonly>'+f.observacao+'</textarea>':'')
+      +(f.intervencao?'<label class="foto-field-lbl">Intervenção recomendada</label><textarea class="foto-intervencao" readonly>'+f.intervencao+'</textarea>':'')
       +'</div></div>';
   });
-
-  const sinteseHTML = sintese
-    ? '<div class="sintese-wrap"><span class="sintese-label">Síntese Técnica — '+amb.nome+'</span>'
-      +'<textarea class="sintese-box" readonly>'+sintese+'</textarea></div>'
-    : '';
-
+  const sinteseHTML = sintese ? '<div class="sintese-wrap"><span class="sintese-label">Síntese Técnica — '+amb.nome+'</span><textarea class="sintese-box" readonly>'+sintese+'</textarea></div>' : '';
   const fotoZoneHTML = fotos.length > 0
-    ? '<div class="foto-zone"><div class="foto-zone-hdr"><span class="foto-zone-label">Registro Fotográfico</span></div>'
-      +'<div class="fotos-grid">'+fotosHTML+'</div>'+sinteseHTML+'</div>'
+    ? '<div class="foto-zone"><div class="foto-zone-hdr"><span class="foto-zone-label">Registro Fotográfico</span></div><div class="fotos-grid">'+fotosHTML+'</div>'+sinteseHTML+'</div>'
     : (sintese ? '<div class="foto-zone">'+sinteseHTML+'</div>' : '');
-
-  ambRoot.innerHTML += '<div class="amb-wrap"><div class="amb-card" id="card-'+amb.id+'">'
-    +'<div class="amb-hdr" onclick="this.closest(\'.amb-card\').classList.toggle(\'closed\')">'
-    +'<span class="amb-num">'+amb.num+'</span><span class="amb-name">'+amb.nome+'</span>'
-    +'<span class="amb-chevron">▾</span></div>'
-    +'<div class="amb-body"><ul class="itens-list">'+itensHTML+'</ul>'+fotoZoneHTML+'</div>'
-    +'</div></div>';
+  ambRoot.innerHTML += '<div class="amb-wrap"><div class="amb-card" id="card-'+amb.id+'"><div class="amb-hdr" onclick="this.closest(\'.amb-card\').classList.toggle(\'closed\')"><span class="amb-num">'+amb.num+'</span><span class="amb-name">'+amb.nome+'</span><span class="amb-chevron">▾</span></div><div class="amb-body"><ul class="itens-list">'+itensHTML+'</ul>'+fotoZoneHTML+'</div></div></div>';
 });
-
-// Índice fotográfico
 let idxHTML = '';
-let totalFotos = 0;
 _AMBIENTES_EXPORT.forEach(amb => {
-  const fotos = _STATE.fotos[amb.id] || [];
+  const fotos = _STATE.fotos[amb.id]||[];
   if (!fotos.length) return;
-  totalFotos += fotos.length;
   const nums = fotos.map(f => String(f.globalNum).padStart(2,'0')).join(', ');
-  idxHTML += '<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--line)">'
-    +'<span style="font-family:var(--title);font-size:10px;color:var(--accent);font-weight:700;min-width:36px">'+amb.num+'</span>'
-    +'<span style="flex:1;color:var(--ink2);font-size:13px">'+amb.nome+'</span>'
-    +'<span style="font-family:var(--title);font-size:11px;color:var(--muted)">'+fotos.length+' foto'+(fotos.length>1?'s':'')+' · Foto '+nums+'</span>'
-    +'</div>';
+  idxHTML += '<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--line)"><span style="font-family:var(--title);font-size:10px;color:var(--accent);font-weight:700;min-width:36px">'+amb.num+'</span><span style="flex:1;color:var(--ink2);font-size:13px">'+amb.nome+'</span><span style="font-family:var(--title);font-size:11px;color:var(--muted)">'+fotos.length+' foto'+(fotos.length>1?'s':'')+' · Foto '+nums+'</span></div>';
 });
-document.getElementById('foto-index-export').innerHTML = idxHTML ||
-  '<p class="sec-text" style="color:var(--muted)">Nenhuma foto registrada.</p>';
-
-// Quadro resumo
+document.getElementById('foto-index-export').innerHTML = idxHTML || '<p class="sec-text" style="color:var(--muted)">Nenhuma foto registrada.</p>';
 let resumoHTML = '';
 _AMBIENTES_EXPORT.forEach(amb => {
   (_STATE.itens[amb.id]||[]).forEach(it => {
     if (!it.crit) return;
     const bc = it.crit==='critico'?'rc':it.crit==='moderado'?'rm':'re';
     const bl = it.crit==='critico'?'Crítico':it.crit==='moderado'?'Moderado':'Estético';
-    resumoHTML += '<tr><td>'+amb.nome+'</td><td>'+esc(it.texto)+'</td>'
-      +'<td><span class="r-badge '+bc+'">'+bl+'</span></td></tr>';
+    resumoHTML += '<tr><td>'+amb.nome+'</td><td>'+esc(it.texto)+'</td><td><span class="r-badge '+bc+'">'+bl+'</span></td></tr>';
   });
 });
-document.getElementById('resumo-export').innerHTML = resumoHTML ||
-  '<tr><td class="resumo-empty" colspan="3">Nenhum item classificado.</td></tr>';
+document.getElementById('resumo-export').innerHTML = resumoHTML || '<tr><td class="resumo-empty" colspan="3">Nenhum item classificado.</td></tr>';
+function autoExpandTextarea(el) { el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
+function autoExpandTextareas() { requestAnimationFrame(function(){ document.querySelectorAll('textarea').forEach(function(ta){ autoExpandTextarea(ta); }); }); }
+function prepararPDF() {
+  document.querySelectorAll('.amb-card.closed').forEach(function(el){ el.classList.remove('closed'); });
+  autoExpandTextareas();
+  setTimeout(function(){ window.print(); }, 250);
+}
+window.addEventListener('beforeprint', function(){ document.querySelectorAll('.amb-card.closed').forEach(function(el){ el.classList.remove('closed'); }); autoExpandTextareas(); });
+document.addEventListener('DOMContentLoaded', autoExpandTextareas);
 <\/script>
 </body>
 </html>`;
 }
 
-/* ════════════════════════════════════════════
-   FIREBASE — INICIALIZAÇÃO
-════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════
+   FIREBASE
+══════════════════════════════════════════════ */
 const firebaseConfig = {
   apiKey:            "AIzaSyC5I4XsXB0oQVXCleJrnZWqtP2KKzTvzBQ",
   authDomain:        "greco-vistoria.firebaseapp.com",
@@ -1684,10 +1537,8 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-
 let currentReportId = null;
 
-/* ─── Helpers ─── */
 function showToast(msg, type = 'ok', ms = 3000) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -1695,16 +1546,8 @@ function showToast(msg, type = 'ok', ms = 3000) {
   clearTimeout(t._timer);
   t._timer = setTimeout(() => { t.className = ''; }, ms);
 }
+function genId() { return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
-
-function genId() {
-  return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-}
-
-/* ════════════════════════════════════════════
-   SALVAR NA NUVEM
-════════════════════════════════════════════ */
-/* Comprime foto para versão menor (salvo na nuvem) */
 function compressForCloud(src) {
   return new Promise(resolve => {
     if (!src || !src.startsWith('data:')) { resolve(src); return; }
@@ -1727,64 +1570,43 @@ async function saveToCloud() {
   const btn = document.getElementById('btn-save');
   btn.textContent = '⏳ Salvando…';
   btn.classList.add('saving');
-
   try {
     if (!currentReportId) currentReportId = genId();
     const rid = currentReportId;
-
-    // ── Capturar textos editáveis ──
     const textos = [];
     document.querySelectorAll('.sec-text[contenteditable]').forEach(el => textos.push(el.innerHTML));
-
-    // ── Salvar metadados no documento principal ──
     showToast('Salvando dados…', 'ok', 60000);
     await db.collection('reports').doc(rid).set({
       savedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      ficha:   {
+      ficha: {
         cliente: document.getElementById('fc').value,
         emp:     document.getElementById('fe').value,
         loc:     document.getElementById('fl').value,
         data:    document.getElementById('fd').value,
       },
-      itens:   itensState,
-      sintese: sinteseState,
-      textos,
+      itens: itensState, sintese: sinteseState, textos,
     });
-
-    // ── Apagar todas as fotos antigas no Firebase antes de salvar ──
-    // (evita duplicatas de sessões anteriores)
     showToast('Limpando fotos antigas…', 'ok', 60000);
     const oldPhotos = await db.collection('reports').doc(rid).collection('photos').get();
     await Promise.all(oldPhotos.docs.map(d => d.ref.delete()));
-
-    // ── Salvar cada foto em subcoleção separada (comprimida) ──
     const totalFotos = AMBIENTES.reduce((s, a) => s + fotosState[a.id].length, 0);
     let done = 0;
-
     for (const amb of AMBIENTES) {
       for (const foto of fotosState[amb.id]) {
         done++;
         showToast(`Salvando fotos… ${done}/${totalFotos}`, 'ok', 60000);
         const compressed = await compressForCloud(foto.src);
-        await db.collection('reports').doc(rid)
-          .collection('photos').doc(foto.id).set({
-            ambId:       amb.id,
-            globalNum:   foto.globalNum,
-            src:         compressed,
-            titulo:      foto.titulo      || '',
-            observacao:  foto.observacao  || '',
-            intervencao: foto.intervencao || '',
-          });
+        await db.collection('reports').doc(rid).collection('photos').doc(foto.id).set({
+          ambId: amb.id, globalNum: foto.globalNum, src: compressed,
+          titulo: foto.titulo||'', observacao: foto.observacao||'', intervencao: foto.intervencao||'',
+        });
         foto.cloudSaved = true;
       }
     }
-
-    // ── Mostrar link ──
     const link = `${location.origin}${location.pathname}?r=${rid}`;
     document.getElementById('shareLinkInput').value = link;
     document.getElementById('shareModal').classList.add('open');
     showToast('✅ Salvo!', 'ok');
-
   } catch (err) {
     console.error(err);
     showToast('❌ Erro: ' + err.message, 'err', 6000);
@@ -1794,64 +1616,33 @@ async function saveToCloud() {
   }
 }
 
-/* ════════════════════════════════════════════
-   CARREGAR DA NUVEM
-════════════════════════════════════════════ */
 async function loadFromCloud(rid) {
   showToast('Carregando relatório…', 'ok', 60000);
   try {
     const snap = await db.collection('reports').doc(rid).get();
     if (!snap.exists) { showToast('❌ Relatório não encontrado.', 'err', 5000); return; }
-
     const d = snap.data();
     currentReportId = rid;
-
-    // Ficha
     if (d.ficha) {
       document.getElementById('fc').value = d.ficha.cliente || '';
       document.getElementById('fe').value = d.ficha.emp     || '';
       document.getElementById('fl').value = d.ficha.loc     || '';
       document.getElementById('fd').value = d.ficha.data    || '';
     }
-
-    // Itens (com criticidade)
-    if (d.itens) {
-      AMBIENTES.forEach(a => {
-        if (d.itens[a.id]) itensState[a.id] = d.itens[a.id];
-      });
-    }
-
-    // Sínteses
+    if (d.itens) { AMBIENTES.forEach(a => { if (d.itens[a.id]) itensState[a.id] = d.itens[a.id]; }); }
     if (d.sintese) Object.assign(sinteseState, d.sintese);
-
-    // Fotos — carrega da subcoleção photos
     const photosSnap = await db.collection('reports').doc(rid).collection('photos').get();
     let maxNum = 0;
     AMBIENTES.forEach(a => { fotosState[a.id] = []; });
     photosSnap.forEach(doc => {
       const f = doc.data();
       if (!fotosState[f.ambId]) return;
-      fotosState[f.ambId].push({
-        id:          doc.id,
-        src:         f.src,
-        cloudSaved:  true,
-        titulo:      f.titulo      || '',
-        observacao:  f.observacao  || '',
-        intervencao: f.intervencao || '',
-        globalNum:   f.globalNum   || 0,
-      });
+      fotosState[f.ambId].push({ id: doc.id, src: f.src, cloudSaved: true, titulo: f.titulo||'', observacao: f.observacao||'', intervencao: f.intervencao||'', globalNum: f.globalNum||0 });
       if (f.globalNum > maxNum) maxNum = f.globalNum;
     });
-    // Ordenar por globalNum dentro de cada ambiente
-    AMBIENTES.forEach(a => {
-      fotosState[a.id].sort((x, y) => x.globalNum - y.globalNum);
-    });
+    AMBIENTES.forEach(a => { fotosState[a.id].sort((x, y) => x.globalNum - y.globalNum); });
     globalCounter = maxNum;
-
-    // Re-renderizar ambientes (cria os elementos do DOM)
     renderAmbientes();
-
-    // Renderizar fotos em cada ambiente (precisa ser após renderAmbientes)
     AMBIENTES.forEach(a => {
       if (fotosState[a.id].length > 0) {
         renderFotos(a.id);
@@ -1859,35 +1650,25 @@ async function loadFromCloud(rid) {
         if (drop) drop.classList.add('hidden');
       }
     });
-
     updateFotoIndex();
-
-    // Textos editáveis
     if (d.textos) {
       document.querySelectorAll('.sec-text[contenteditable]').forEach((el, i) => {
         if (d.textos[i] !== undefined) el.innerHTML = d.textos[i];
       });
     }
-
-    // Gerar resumo automaticamente
     generateSummary();
-    // Aplicar modo leitura nos novos elementos renderizados
     if (!editMode) {
       document.querySelectorAll('.foto-titulo, .foto-leg, .foto-intervencao, .sintese-box, .ficha-cell input').forEach(el => el.readOnly = true);
       document.querySelectorAll('.crit-sel').forEach(el => el.disabled = true);
     }
-    // Expandir textareas
     autoExpandTextareas();
-
     showToast('✅ Relatório carregado!', 'ok');
-
   } catch (err) {
     console.error(err);
     showToast('❌ Erro ao carregar: ' + err.message, 'err', 6000);
   }
 }
 
-/* ─── Copiar link ─── */
 function copyShareLink() {
   const inp = document.getElementById('shareLinkInput');
   inp.select();
@@ -1895,26 +1676,13 @@ function copyShareLink() {
   showToast('🔗 Link copiado!', 'ok');
 }
 
-/* ════════════════════════════════════════════
-   ATUALIZAR setEditMode para mostrar btn-save
-════════════════════════════════════════════ */
-const _origSetEditMode = setEditMode;
-setEditMode = function() {
-  _origSetEditMode();
-  document.getElementById('btn-save').style.display = '';
-};
-const _origSetViewMode = setViewMode;
-setViewMode = function() {
-  _origSetViewMode();
-  document.getElementById('btn-save').style.display = 'none';
-};
-
-/* ─── INIT ─── */
+/* ══════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════ */
 renderAmbientes();
 updateFotoIndex();
 setViewMode();
 
-// Verificar se URL tem ?r=ID para carregar relatório salvo
 (function() {
   const rid = new URLSearchParams(location.search).get('r');
   if (rid) loadFromCloud(rid);
